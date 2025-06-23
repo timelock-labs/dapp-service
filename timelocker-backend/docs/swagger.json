@@ -13,6 +13,219 @@
     "host": "localhost:8080",
     "basePath": "/",
     "paths": {
+        "/api/v1/assets": {
+            "get": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "获取用户在所有链上的资产信息",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "资产"
+                ],
+                "summary": "获取用户资产",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "主要显示的链ID",
+                        "name": "chain_id",
+                        "in": "query"
+                    },
+                    {
+                        "type": "boolean",
+                        "description": "是否强制刷新",
+                        "name": "force_refresh",
+                        "in": "query"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/types.APIResponse"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "$ref": "#/definitions/types.UserAssetResponse"
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/types.APIResponse"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "error": {
+                                            "$ref": "#/definitions/types.APIError"
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/types.APIResponse"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "error": {
+                                            "$ref": "#/definitions/types.APIError"
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/types.APIResponse"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "error": {
+                                            "$ref": "#/definitions/types.APIError"
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    }
+                }
+            }
+        },
+        "/api/v1/assets/refresh": {
+            "post": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "强制刷新用户在指定链上的资产信息",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "资产"
+                ],
+                "summary": "刷新用户资产",
+                "parameters": [
+                    {
+                        "description": "刷新请求",
+                        "name": "request",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/types.AssetQueryRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/types.APIResponse"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "type": "string"
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/types.APIResponse"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "error": {
+                                            "$ref": "#/definitions/types.APIError"
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/types.APIResponse"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "error": {
+                                            "$ref": "#/definitions/types.APIError"
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/types.APIResponse"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "error": {
+                                            "$ref": "#/definitions/types.APIError"
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    }
+                }
+            }
+        },
         "/api/v1/auth/profile": {
             "get": {
                 "security": [
@@ -102,6 +315,69 @@
                                     "properties": {
                                         "data": {
                                             "$ref": "#/definitions/types.WalletConnectResponse"
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/types.APIResponse"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/types.APIResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/api/v1/auth/switch-chain": {
+            "post": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "切换到新的区块链",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "认证"
+                ],
+                "summary": "切换链",
+                "parameters": [
+                    {
+                        "description": "切换链请求",
+                        "name": "request",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/types.SwitchChainRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/types.APIResponse"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "$ref": "#/definitions/types.SwitchChainResponse"
                                         }
                                     }
                                 }
@@ -235,6 +511,85 @@
                 }
             }
         },
+        "types.AssetInfo": {
+            "type": "object",
+            "properties": {
+                "balance": {
+                    "type": "string"
+                },
+                "balance_wei": {
+                    "type": "string"
+                },
+                "change_24h": {
+                    "type": "number"
+                },
+                "contract_address": {
+                    "type": "string"
+                },
+                "is_native": {
+                    "type": "boolean"
+                },
+                "last_updated": {
+                    "type": "string"
+                },
+                "token_name": {
+                    "type": "string"
+                },
+                "token_price": {
+                    "type": "number"
+                },
+                "token_symbol": {
+                    "type": "string"
+                },
+                "usd_value": {
+                    "type": "number"
+                }
+            }
+        },
+        "types.AssetQueryRequest": {
+            "type": "object",
+            "required": [
+                "chain_id",
+                "wallet_address"
+            ],
+            "properties": {
+                "chain_id": {
+                    "type": "integer"
+                },
+                "force_refresh": {
+                    "type": "boolean"
+                },
+                "wallet_address": {
+                    "type": "string"
+                }
+            }
+        },
+        "types.ChainAssetInfo": {
+            "type": "object",
+            "properties": {
+                "assets": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/types.AssetInfo"
+                    }
+                },
+                "chain_id": {
+                    "type": "integer"
+                },
+                "chain_name": {
+                    "type": "string"
+                },
+                "chain_symbol": {
+                    "type": "string"
+                },
+                "last_updated": {
+                    "type": "string"
+                },
+                "total_usd_value": {
+                    "type": "number"
+                }
+            }
+        },
         "types.JSONB": {
             "type": "object",
             "additionalProperties": true
@@ -247,6 +602,37 @@
             "properties": {
                 "refresh_token": {
                     "type": "string"
+                }
+            }
+        },
+        "types.SwitchChainRequest": {
+            "type": "object",
+            "required": [
+                "chain_id"
+            ],
+            "properties": {
+                "chain_id": {
+                    "type": "integer"
+                }
+            }
+        },
+        "types.SwitchChainResponse": {
+            "type": "object",
+            "properties": {
+                "access_token": {
+                    "type": "string"
+                },
+                "expires_at": {
+                    "type": "string"
+                },
+                "message": {
+                    "type": "string"
+                },
+                "refresh_token": {
+                    "type": "string"
+                },
+                "user": {
+                    "$ref": "#/definitions/types.User"
                 }
             }
         },
@@ -273,6 +659,33 @@
                 },
                 "updated_at": {
                     "type": "string"
+                },
+                "wallet_address": {
+                    "type": "string"
+                }
+            }
+        },
+        "types.UserAssetResponse": {
+            "type": "object",
+            "properties": {
+                "last_updated": {
+                    "type": "string"
+                },
+                "other_chains": {
+                    "description": "为空",
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/types.ChainAssetInfo"
+                    }
+                },
+                "primary_chain": {
+                    "$ref": "#/definitions/types.ChainAssetInfo"
+                },
+                "primary_chain_id": {
+                    "type": "integer"
+                },
+                "total_usd_value": {
+                    "type": "number"
                 },
                 "wallet_address": {
                     "type": "string"

@@ -19,4 +19,37 @@ redis:
 jwt:
   secret: "timelocker-jwt-secret-v1"
   access_expiry: "24h"   # 24小时
-  refresh_expiry: "168h" # 7天 
+  refresh_expiry: "168h" # 7天
+
+price:
+  provider: "coingecko"  # 价格源提供商
+  api_key: "xxx"            # API密钥
+  base_url: "https://api.coingecko.com/api/v3"
+  update_interval: "30s" # 价格更新间隔
+  request_timeout: "10s" # 请求超时时间
+  cache_prefix: "price:" # Redis缓存前缀
+
+# RPC节点配置
+rpc:
+  provider: "alchemy"  # RPC提供商：alchemy 或 infura
+  alchemy:
+    api_key: "xxx"
+    ethereum: "https://eth-mainnet.g.alchemy.com/v2/"
+    bsc: "https://bnb-mainnet.g.alchemy.com/v2/"
+    polygon: "https://polygon-mainnet.g.alchemy.com/v2/"
+    arbitrum: "https://arb-mainnet.g.alchemy.com/v2/"
+  infura:
+    api_key: "xxx"
+    ethereum: "https://mainnet.infura.io/v3/"
+    bsc: "https://bsc-dataseed.binance.org/"
+    polygon: "https://polygon-mainnet.infura.io/v3/"
+    arbitrum: "https://arbitrum-mainnet.infura.io/v3/"
+  request_timeout: "30s"
+
+# 资产查询配置
+asset:
+  update_interval: "30s"       # 资产更新间隔
+  batch_size: 10              # 批量查询大小
+  cache_prefix: "asset:"      # Redis缓存前缀
+  max_retry: 3                # 最大重试次数
+  retry_delay: "5s"           # 重试延迟 
