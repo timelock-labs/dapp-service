@@ -22,7 +22,7 @@ const docTemplate = `{
                         "BearerAuth": []
                     }
                 ],
-                "description": "获取用户在所有链上的资产信息",
+                "description": "获取当前认证用户在所有支持的区块链上的资产信息，包括代币余额、USD价值、价格变化等。如果数据库中没有缓存数据，系统会自动从区块链上刷新最新的资产信息。资产按USD价值从高到低排序。",
                 "consumes": [
                     "application/json"
                 ],
@@ -30,26 +30,12 @@ const docTemplate = `{
                     "application/json"
                 ],
                 "tags": [
-                    "资产"
+                    "Assets"
                 ],
-                "summary": "获取用户资产",
-                "parameters": [
-                    {
-                        "type": "integer",
-                        "description": "主要显示的链ID",
-                        "name": "chain_id",
-                        "in": "query"
-                    },
-                    {
-                        "type": "boolean",
-                        "description": "是否强制刷新",
-                        "name": "force_refresh",
-                        "in": "query"
-                    }
-                ],
+                "summary": "获取用户资产列表",
                 "responses": {
                     "200": {
-                        "description": "OK",
+                        "description": "成功获取用户资产信息",
                         "schema": {
                             "allOf": [
                                 {
@@ -66,26 +52,8 @@ const docTemplate = `{
                             ]
                         }
                     },
-                    "400": {
-                        "description": "Bad Request",
-                        "schema": {
-                            "allOf": [
-                                {
-                                    "$ref": "#/definitions/types.APIResponse"
-                                },
-                                {
-                                    "type": "object",
-                                    "properties": {
-                                        "error": {
-                                            "$ref": "#/definitions/types.APIError"
-                                        }
-                                    }
-                                }
-                            ]
-                        }
-                    },
                     "401": {
-                        "description": "Unauthorized",
+                        "description": "未认证或令牌无效",
                         "schema": {
                             "allOf": [
                                 {
@@ -103,7 +71,7 @@ const docTemplate = `{
                         }
                     },
                     "500": {
-                        "description": "Internal Server Error",
+                        "description": "获取资产信息失败或区块链查询错误",
                         "schema": {
                             "allOf": [
                                 {
@@ -130,7 +98,7 @@ const docTemplate = `{
                         "BearerAuth": []
                     }
                 ],
-                "description": "强制刷新用户在指定链上的资产信息",
+                "description": "强制从区块链上重新获取用户在所有支持链上的最新资产信息，更新数据库缓存。此操作可能需要较长时间，因为需要查询多个区块链网络的数据。",
                 "consumes": [
                     "application/json"
                 ],
@@ -138,23 +106,12 @@ const docTemplate = `{
                     "application/json"
                 ],
                 "tags": [
-                    "资产"
+                    "Assets"
                 ],
-                "summary": "刷新用户资产",
-                "parameters": [
-                    {
-                        "description": "刷新请求",
-                        "name": "request",
-                        "in": "body",
-                        "required": true,
-                        "schema": {
-                            "$ref": "#/definitions/types.AssetQueryRequest"
-                        }
-                    }
-                ],
+                "summary": "强制刷新用户资产信息",
                 "responses": {
                     "200": {
-                        "description": "OK",
+                        "description": "资产刷新成功",
                         "schema": {
                             "allOf": [
                                 {
@@ -171,26 +128,8 @@ const docTemplate = `{
                             ]
                         }
                     },
-                    "400": {
-                        "description": "Bad Request",
-                        "schema": {
-                            "allOf": [
-                                {
-                                    "$ref": "#/definitions/types.APIResponse"
-                                },
-                                {
-                                    "type": "object",
-                                    "properties": {
-                                        "error": {
-                                            "$ref": "#/definitions/types.APIError"
-                                        }
-                                    }
-                                }
-                            ]
-                        }
-                    },
                     "401": {
-                        "description": "Unauthorized",
+                        "description": "未认证或令牌无效",
                         "schema": {
                             "allOf": [
                                 {
@@ -208,7 +147,7 @@ const docTemplate = `{
                         }
                     },
                     "500": {
-                        "description": "Internal Server Error",
+                        "description": "刷新资产失败或区块链查询错误",
                         "schema": {
                             "allOf": [
                                 {
@@ -235,7 +174,7 @@ const docTemplate = `{
                         "BearerAuth": []
                     }
                 ],
-                "description": "获取当前认证用户的资料信息",
+                "description": "获取当前认证用户的资料信息，包括钱包地址、当前选择的链ID、注册时间和最后登录时间等。此接口需要在请求头中携带有效的JWT访问令牌。",
                 "consumes": [
                     "application/json"
                 ],
@@ -243,12 +182,12 @@ const docTemplate = `{
                     "application/json"
                 ],
                 "tags": [
-                    "认证"
+                    "Authentication"
                 ],
                 "summary": "获取用户资料",
                 "responses": {
                     "200": {
-                        "description": "OK",
+                        "description": "成功获取用户资料",
                         "schema": {
                             "allOf": [
                                 {
@@ -266,15 +205,57 @@ const docTemplate = `{
                         }
                     },
                     "401": {
-                        "description": "Unauthorized",
+                        "description": "未认证或令牌无效",
                         "schema": {
-                            "$ref": "#/definitions/types.APIResponse"
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/types.APIResponse"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "error": {
+                                            "$ref": "#/definitions/types.APIError"
+                                        }
+                                    }
+                                }
+                            ]
                         }
                     },
                     "404": {
-                        "description": "Not Found",
+                        "description": "用户不存在",
                         "schema": {
-                            "$ref": "#/definitions/types.APIResponse"
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/types.APIResponse"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "error": {
+                                            "$ref": "#/definitions/types.APIError"
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    },
+                    "500": {
+                        "description": "服务器内部错误",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/types.APIResponse"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "error": {
+                                            "$ref": "#/definitions/types.APIError"
+                                        }
+                                    }
+                                }
+                            ]
                         }
                     }
                 }
@@ -282,7 +263,7 @@ const docTemplate = `{
         },
         "/api/v1/auth/refresh": {
             "post": {
-                "description": "使用刷新令牌获取新的访问令牌",
+                "description": "使用刷新令牌获取新的访问令牌。当访问令牌过期时，前端可以使用此接口通过刷新令牌重新获取新的访问令牌和刷新令牌，无需重新进行钱包签名认证。",
                 "consumes": [
                     "application/json"
                 ],
@@ -290,12 +271,12 @@ const docTemplate = `{
                     "application/json"
                 ],
                 "tags": [
-                    "认证"
+                    "Authentication"
                 ],
                 "summary": "刷新访问令牌",
                 "parameters": [
                     {
-                        "description": "刷新令牌请求",
+                        "description": "刷新令牌请求体",
                         "name": "request",
                         "in": "body",
                         "required": true,
@@ -306,7 +287,7 @@ const docTemplate = `{
                 ],
                 "responses": {
                     "200": {
-                        "description": "OK",
+                        "description": "刷新成功，返回新的访问令牌和刷新令牌",
                         "schema": {
                             "allOf": [
                                 {
@@ -324,15 +305,75 @@ const docTemplate = `{
                         }
                     },
                     "400": {
-                        "description": "Bad Request",
+                        "description": "请求参数错误",
                         "schema": {
-                            "$ref": "#/definitions/types.APIResponse"
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/types.APIResponse"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "error": {
+                                            "$ref": "#/definitions/types.APIError"
+                                        }
+                                    }
+                                }
+                            ]
                         }
                     },
                     "401": {
-                        "description": "Unauthorized",
+                        "description": "刷新令牌无效或已过期",
                         "schema": {
-                            "$ref": "#/definitions/types.APIResponse"
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/types.APIResponse"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "error": {
+                                            "$ref": "#/definitions/types.APIError"
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    },
+                    "404": {
+                        "description": "用户不存在",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/types.APIResponse"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "error": {
+                                            "$ref": "#/definitions/types.APIError"
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    },
+                    "500": {
+                        "description": "服务器内部错误",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/types.APIResponse"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "error": {
+                                            "$ref": "#/definitions/types.APIError"
+                                        }
+                                    }
+                                }
+                            ]
                         }
                     }
                 }
@@ -345,7 +386,7 @@ const docTemplate = `{
                         "BearerAuth": []
                     }
                 ],
-                "description": "切换到新的区块链",
+                "description": "用户切换到新的区块链网络。由于不同链的安全性考虑，切换链需要重新进行钱包签名验证。成功后会更新用户的当前链ID，并返回新的访问令牌。",
                 "consumes": [
                     "application/json"
                 ],
@@ -353,12 +394,12 @@ const docTemplate = `{
                     "application/json"
                 ],
                 "tags": [
-                    "认证"
+                    "Authentication"
                 ],
-                "summary": "切换链",
+                "summary": "切换区块链网络",
                 "parameters": [
                     {
-                        "description": "切换链请求",
+                        "description": "切换链请求体，包含新的链ID和签名信息",
                         "name": "request",
                         "in": "body",
                         "required": true,
@@ -369,7 +410,7 @@ const docTemplate = `{
                 ],
                 "responses": {
                     "200": {
-                        "description": "OK",
+                        "description": "切换成功，返回新的访问令牌和用户信息",
                         "schema": {
                             "allOf": [
                                 {
@@ -387,15 +428,75 @@ const docTemplate = `{
                         }
                     },
                     "400": {
-                        "description": "Bad Request",
+                        "description": "请求参数错误",
                         "schema": {
-                            "$ref": "#/definitions/types.APIResponse"
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/types.APIResponse"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "error": {
+                                            "$ref": "#/definitions/types.APIError"
+                                        }
+                                    }
+                                }
+                            ]
                         }
                     },
                     "401": {
-                        "description": "Unauthorized",
+                        "description": "未认证或令牌无效",
                         "schema": {
-                            "$ref": "#/definitions/types.APIResponse"
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/types.APIResponse"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "error": {
+                                            "$ref": "#/definitions/types.APIError"
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    },
+                    "404": {
+                        "description": "用户不存在",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/types.APIResponse"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "error": {
+                                            "$ref": "#/definitions/types.APIError"
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    },
+                    "500": {
+                        "description": "服务器内部错误",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/types.APIResponse"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "error": {
+                                            "$ref": "#/definitions/types.APIError"
+                                        }
+                                    }
+                                }
+                            ]
                         }
                     }
                 }
@@ -403,7 +504,7 @@ const docTemplate = `{
         },
         "/api/v1/auth/wallet-connect": {
             "post": {
-                "description": "通过钱包签名进行用户认证",
+                "description": "通过钱包签名进行用户认证。前端需要先让用户用钱包对特定消息进行签名，然后将钱包地址、签名和消息发送到此接口进行验证。验证成功后返回JWT访问令牌和刷新令牌。",
                 "consumes": [
                     "application/json"
                 ],
@@ -411,12 +512,12 @@ const docTemplate = `{
                     "application/json"
                 ],
                 "tags": [
-                    "认证"
+                    "Authentication"
                 ],
                 "summary": "钱包连接认证",
                 "parameters": [
                     {
-                        "description": "钱包连接请求",
+                        "description": "钱包连接认证请求体",
                         "name": "request",
                         "in": "body",
                         "required": true,
@@ -427,7 +528,7 @@ const docTemplate = `{
                 ],
                 "responses": {
                     "200": {
-                        "description": "OK",
+                        "description": "认证成功，返回访问令牌和用户信息",
                         "schema": {
                             "allOf": [
                                 {
@@ -445,23 +546,65 @@ const docTemplate = `{
                         }
                     },
                     "400": {
-                        "description": "Bad Request",
+                        "description": "请求参数错误，可能是钱包地址格式不正确",
                         "schema": {
-                            "$ref": "#/definitions/types.APIResponse"
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/types.APIResponse"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "error": {
+                                            "$ref": "#/definitions/types.APIError"
+                                        }
+                                    }
+                                }
+                            ]
                         }
                     },
                     "401": {
-                        "description": "Unauthorized",
+                        "description": "认证失败，可能是签名无效或地址恢复失败",
                         "schema": {
-                            "$ref": "#/definitions/types.APIResponse"
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/types.APIResponse"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "error": {
+                                            "$ref": "#/definitions/types.APIError"
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    },
+                    "500": {
+                        "description": "服务器内部错误",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/types.APIResponse"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "error": {
+                                            "$ref": "#/definitions/types.APIError"
+                                        }
+                                    }
+                                }
+                            ]
                         }
                     }
                 }
             }
         },
-        "/health": {
+        "/api/v1/chain/chainid/{chain_id}": {
             "get": {
-                "description": "检查服务健康状态",
+                "description": "根据区块链网络的ChainID（如以太坊主网为1）获取具体的链信息，包括链名称、原生代币、Logo等详细信息。",
                 "consumes": [
                     "application/json"
                 ],
@@ -469,12 +612,1186 @@ const docTemplate = `{
                     "application/json"
                 ],
                 "tags": [
-                    "系统"
+                    "Chain"
                 ],
-                "summary": "健康检查",
+                "summary": "根据区块链ChainID获取链信息",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "example": 1,
+                        "description": "区块链网络的ChainID",
+                        "name": "chain_id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
                 "responses": {
                     "200": {
-                        "description": "OK",
+                        "description": "成功获取链信息",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/types.APIResponse"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "$ref": "#/definitions/types.SupportChain"
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    },
+                    "400": {
+                        "description": "请求参数错误",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/types.APIResponse"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "error": {
+                                            "$ref": "#/definitions/types.APIError"
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    },
+                    "404": {
+                        "description": "链信息不存在",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/types.APIResponse"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "error": {
+                                            "$ref": "#/definitions/types.APIError"
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    },
+                    "500": {
+                        "description": "服务器内部错误",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/types.APIResponse"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "error": {
+                                            "$ref": "#/definitions/types.APIError"
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    }
+                }
+            }
+        },
+        "/api/v1/chain/list": {
+            "get": {
+                "description": "获取所有支持的区块链列表，可根据是否测试网和是否激活状态进行筛选。返回链的详细信息包括名称、链ID、原生代币、Logo等信息。",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Chain"
+                ],
+                "summary": "获取支持的区块链列表",
+                "parameters": [
+                    {
+                        "type": "boolean",
+                        "example": false,
+                        "description": "是否筛选测试网",
+                        "name": "is_testnet",
+                        "in": "query"
+                    },
+                    {
+                        "type": "boolean",
+                        "example": true,
+                        "description": "是否筛选激活状态",
+                        "name": "is_active",
+                        "in": "query"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "成功获取支持链列表",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/types.APIResponse"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "$ref": "#/definitions/types.GetSupportChainsResponse"
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    },
+                    "400": {
+                        "description": "请求参数错误",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/types.APIResponse"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "error": {
+                                            "$ref": "#/definitions/types.APIError"
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    },
+                    "500": {
+                        "description": "服务器内部错误",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/types.APIResponse"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "error": {
+                                            "$ref": "#/definitions/types.APIError"
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    }
+                }
+            }
+        },
+        "/api/v1/chain/{id}": {
+            "get": {
+                "description": "根据链在数据库中的ID获取具体的链信息，包括链名称、链ID、原生代币、Logo等详细信息。",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Chain"
+                ],
+                "summary": "根据数据库ID获取链信息",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "example": 1,
+                        "description": "链在数据库中的ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "成功获取链信息",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/types.APIResponse"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "$ref": "#/definitions/types.SupportChain"
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    },
+                    "400": {
+                        "description": "请求参数错误",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/types.APIResponse"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "error": {
+                                            "$ref": "#/definitions/types.APIError"
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    },
+                    "404": {
+                        "description": "链信息不存在",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/types.APIResponse"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "error": {
+                                            "$ref": "#/definitions/types.APIError"
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    },
+                    "500": {
+                        "description": "服务器内部错误",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/types.APIResponse"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "error": {
+                                            "$ref": "#/definitions/types.APIError"
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    }
+                }
+            }
+        },
+        "/api/v1/timelock/create": {
+            "post": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "创建新的timelock合约记录。用户需要提供合约的详细信息，包括链ID、合约地址、标准类型（compound或openzeppelin）、创建者信息、交易哈希以及相关的治理参数。系统支持Compound和OpenZeppelin两种timelock标准。",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Timelock"
+                ],
+                "summary": "创建timelock合约记录",
+                "parameters": [
+                    {
+                        "description": "创建timelock合约的请求体",
+                        "name": "request",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/types.CreateTimeLockRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "成功创建timelock合约记录",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/types.APIResponse"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "$ref": "#/definitions/types.TimeLock"
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    },
+                    "400": {
+                        "description": "请求参数错误，可能是合约参数无效、标准类型错误或备注过长",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/types.APIResponse"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "error": {
+                                            "$ref": "#/definitions/types.APIError"
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    },
+                    "401": {
+                        "description": "未认证或令牌无效",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/types.APIResponse"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "error": {
+                                            "$ref": "#/definitions/types.APIError"
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    },
+                    "409": {
+                        "description": "timelock合约已存在",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/types.APIResponse"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "error": {
+                                            "$ref": "#/definitions/types.APIError"
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    },
+                    "500": {
+                        "description": "服务器内部错误",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/types.APIResponse"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "error": {
+                                            "$ref": "#/definitions/types.APIError"
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    }
+                }
+            }
+        },
+        "/api/v1/timelock/import": {
+            "post": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "导入已在区块链上部署的timelock合约。系统会通过提供的ABI信息验证合约的有效性，然后将合约信息添加到用户的timelock合约列表中。支持导入Compound和OpenZeppelin两种标准的timelock合约。",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Timelock"
+                ],
+                "summary": "导入已存在的timelock合约",
+                "parameters": [
+                    {
+                        "description": "导入timelock合约的请求体，包含合约地址、ABI等信息",
+                        "name": "request",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/types.ImportTimeLockRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "成功导入timelock合约",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/types.APIResponse"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "$ref": "#/definitions/types.TimeLock"
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    },
+                    "400": {
+                        "description": "请求参数错误，可能是合约地址无效、ABI格式错误、标准类型错误或备注过长",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/types.APIResponse"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "error": {
+                                            "$ref": "#/definitions/types.APIError"
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    },
+                    "401": {
+                        "description": "未认证或令牌无效",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/types.APIResponse"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "error": {
+                                            "$ref": "#/definitions/types.APIError"
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    },
+                    "409": {
+                        "description": "timelock合约已存在",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/types.APIResponse"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "error": {
+                                            "$ref": "#/definitions/types.APIError"
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    },
+                    "500": {
+                        "description": "服务器内部错误或合约验证失败",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/types.APIResponse"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "error": {
+                                            "$ref": "#/definitions/types.APIError"
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    }
+                }
+            }
+        },
+        "/api/v1/timelock/list": {
+            "get": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "分页获取当前用户的timelock合约列表。支持按链ID、合约标准和状态进行筛选。返回的列表包含合约的基本信息，如合约地址、标准类型、状态、备注等。默认按创建时间倒序排列。",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Timelock"
+                ],
+                "summary": "获取用户timelock合约列表",
+                "parameters": [
+                    {
+                        "minimum": 1,
+                        "type": "integer",
+                        "default": 1,
+                        "description": "页码，从1开始",
+                        "name": "page",
+                        "in": "query"
+                    },
+                    {
+                        "maximum": 100,
+                        "minimum": 1,
+                        "type": "integer",
+                        "default": 10,
+                        "description": "每页数量",
+                        "name": "page_size",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "example": 1,
+                        "description": "按链ID筛选",
+                        "name": "chain_id",
+                        "in": "query"
+                    },
+                    {
+                        "enum": [
+                            "compound",
+                            "openzeppelin"
+                        ],
+                        "type": "string",
+                        "example": "openzeppelin",
+                        "description": "按合约标准筛选",
+                        "name": "standard",
+                        "in": "query"
+                    },
+                    {
+                        "enum": [
+                            "active",
+                            "inactive"
+                        ],
+                        "type": "string",
+                        "example": "active",
+                        "description": "按状态筛选",
+                        "name": "status",
+                        "in": "query"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "成功获取timelock合约列表",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/types.APIResponse"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "$ref": "#/definitions/types.GetTimeLockListResponse"
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    },
+                    "400": {
+                        "description": "请求参数错误",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/types.APIResponse"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "error": {
+                                            "$ref": "#/definitions/types.APIError"
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    },
+                    "401": {
+                        "description": "未认证或令牌无效",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/types.APIResponse"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "error": {
+                                            "$ref": "#/definitions/types.APIError"
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    },
+                    "500": {
+                        "description": "服务器内部错误",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/types.APIResponse"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "error": {
+                                            "$ref": "#/definitions/types.APIError"
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    }
+                }
+            }
+        },
+        "/api/v1/timelock/status": {
+            "get": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "检查当前用户是否拥有timelock合约，返回用户的timelock合约状态信息。如果用户有timelock合约，会返回合约列表的基本信息。",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Timelock"
+                ],
+                "summary": "检查用户timelock合约状态",
+                "responses": {
+                    "200": {
+                        "description": "成功获取timelock状态信息",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/types.APIResponse"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "$ref": "#/definitions/types.CheckTimeLockStatusResponse"
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    },
+                    "401": {
+                        "description": "未认证或令牌无效",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/types.APIResponse"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "error": {
+                                            "$ref": "#/definitions/types.APIError"
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    },
+                    "500": {
+                        "description": "服务器内部错误",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/types.APIResponse"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "error": {
+                                            "$ref": "#/definitions/types.APIError"
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    }
+                }
+            }
+        },
+        "/api/v1/timelock/{id}": {
+            "get": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "获取指定timelock合约的完整详细信息，包括合约的基本信息、治理参数（如提议者列表、执行者列表、管理员地址等）。只有合约的拥有者才能查看详细信息。",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Timelock"
+                ],
+                "summary": "获取timelock合约详细信息",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "example": 1,
+                        "description": "Timelock合约的数据库ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "成功获取timelock合约详情",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/types.APIResponse"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "$ref": "#/definitions/types.TimeLockDetailResponse"
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    },
+                    "400": {
+                        "description": "请求参数错误，timelock ID无效",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/types.APIResponse"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "error": {
+                                            "$ref": "#/definitions/types.APIError"
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    },
+                    "401": {
+                        "description": "未认证或令牌无效",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/types.APIResponse"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "error": {
+                                            "$ref": "#/definitions/types.APIError"
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    },
+                    "403": {
+                        "description": "无权访问此timelock合约",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/types.APIResponse"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "error": {
+                                            "$ref": "#/definitions/types.APIError"
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    },
+                    "404": {
+                        "description": "timelock合约不存在",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/types.APIResponse"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "error": {
+                                            "$ref": "#/definitions/types.APIError"
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    },
+                    "500": {
+                        "description": "服务器内部错误",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/types.APIResponse"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "error": {
+                                            "$ref": "#/definitions/types.APIError"
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    }
+                }
+            },
+            "put": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "更新指定timelock合约的备注信息。只有合约的拥有者才能更新备注。备注信息用于帮助用户管理和识别不同的timelock合约。",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Timelock"
+                ],
+                "summary": "更新timelock合约备注",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "example": 1,
+                        "description": "Timelock合约的数据库ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "description": "更新请求体，包含新的备注信息",
+                        "name": "request",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/types.UpdateTimeLockRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "成功更新timelock合约备注",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/types.APIResponse"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "type": "object"
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    },
+                    "400": {
+                        "description": "请求参数错误，可能是ID无效或备注过长",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/types.APIResponse"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "error": {
+                                            "$ref": "#/definitions/types.APIError"
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    },
+                    "401": {
+                        "description": "未认证或令牌无效",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/types.APIResponse"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "error": {
+                                            "$ref": "#/definitions/types.APIError"
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    },
+                    "403": {
+                        "description": "无权访问此timelock合约",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/types.APIResponse"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "error": {
+                                            "$ref": "#/definitions/types.APIError"
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    },
+                    "404": {
+                        "description": "timelock合约不存在",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/types.APIResponse"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "error": {
+                                            "$ref": "#/definitions/types.APIError"
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    },
+                    "500": {
+                        "description": "服务器内部错误",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/types.APIResponse"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "error": {
+                                            "$ref": "#/definitions/types.APIError"
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    }
+                }
+            },
+            "delete": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "删除指定的timelock合约记录（软删除）。只有合约的拥有者才能删除。删除操作是软删除，合约记录会被标记为已删除状态，但不会从数据库中物理删除，以保证数据的完整性和可追溯性。",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Timelock"
+                ],
+                "summary": "删除timelock合约记录",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "example": 1,
+                        "description": "Timelock合约的数据库ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "成功删除timelock合约记录",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/types.APIResponse"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "type": "object"
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    },
+                    "400": {
+                        "description": "请求参数错误，timelock ID无效",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/types.APIResponse"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "error": {
+                                            "$ref": "#/definitions/types.APIError"
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    },
+                    "401": {
+                        "description": "未认证或令牌无效",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/types.APIResponse"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "error": {
+                                            "$ref": "#/definitions/types.APIError"
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    },
+                    "403": {
+                        "description": "无权访问此timelock合约",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/types.APIResponse"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "error": {
+                                            "$ref": "#/definitions/types.APIError"
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    },
+                    "404": {
+                        "description": "timelock合约不存在",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/types.APIResponse"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "error": {
+                                            "$ref": "#/definitions/types.APIError"
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    },
+                    "500": {
+                        "description": "服务器内部错误",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/types.APIResponse"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "error": {
+                                            "$ref": "#/definitions/types.APIError"
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    }
+                }
+            }
+        },
+        "/health": {
+            "get": {
+                "description": "检查TimeLocker后端服务的健康状态，返回服务状态、服务名称和版本信息。此接口用于监控系统可用性。",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "System"
+                ],
+                "summary": "服务健康检查",
+                "responses": {
+                    "200": {
+                        "description": "服务健康状态正常",
                         "schema": {
                             "type": "object",
                             "additionalProperties": {
@@ -522,8 +1839,17 @@ const docTemplate = `{
                 "balance_wei": {
                     "type": "string"
                 },
-                "change_24h": {
-                    "type": "number"
+                "chain_display_name": {
+                    "type": "string"
+                },
+                "chain_id": {
+                    "type": "integer"
+                },
+                "chain_logo_url": {
+                    "type": "string"
+                },
+                "chain_name": {
+                    "type": "string"
                 },
                 "contract_address": {
                     "type": "string"
@@ -531,7 +1857,20 @@ const docTemplate = `{
                 "is_native": {
                     "type": "boolean"
                 },
+                "is_testnet": {
+                    "type": "boolean"
+                },
                 "last_updated": {
+                    "type": "string"
+                },
+                "price_change_24h": {
+                    "description": "24小时价格涨跌幅（%）",
+                    "type": "number"
+                },
+                "token_decimals": {
+                    "type": "integer"
+                },
+                "token_logo_url": {
                     "type": "string"
                 },
                 "token_name": {
@@ -548,32 +1887,34 @@ const docTemplate = `{
                 }
             }
         },
-        "types.AssetQueryRequest": {
+        "types.CheckTimeLockStatusResponse": {
             "type": "object",
-            "required": [
-                "chain_id",
-                "wallet_address"
-            ],
             "properties": {
-                "chain_id": {
-                    "type": "integer"
-                },
-                "force_refresh": {
+                "has_timelocks": {
                     "type": "boolean"
                 },
-                "wallet_address": {
-                    "type": "string"
+                "timelocks": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/types.TimeLock"
+                    }
                 }
             }
         },
-        "types.ChainAssetInfo": {
+        "types.CreateTimeLockRequest": {
             "type": "object",
+            "required": [
+                "chain_id",
+                "chain_name",
+                "contract_address",
+                "creator_address",
+                "standard",
+                "tx_hash"
+            ],
             "properties": {
-                "assets": {
-                    "type": "array",
-                    "items": {
-                        "$ref": "#/definitions/types.AssetInfo"
-                    }
+                "admin": {
+                    "description": "Compound标准的参数",
+                    "type": "string"
                 },
                 "chain_id": {
                     "type": "integer"
@@ -581,20 +1922,123 @@ const docTemplate = `{
                 "chain_name": {
                     "type": "string"
                 },
-                "chain_symbol": {
+                "contract_address": {
                     "type": "string"
                 },
-                "last_updated": {
+                "creator_address": {
                     "type": "string"
                 },
-                "total_usd_value": {
-                    "type": "number"
+                "executors": {
+                    "description": "Openzeppelin标准的参数",
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    }
+                },
+                "min_delay": {
+                    "description": "Compound和Openzeppelin都有的参数",
+                    "type": "integer"
+                },
+                "proposers": {
+                    "description": "Openzeppelin标准的参数",
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    }
+                },
+                "remark": {
+                    "type": "string",
+                    "maxLength": 500
+                },
+                "standard": {
+                    "enum": [
+                        "compound",
+                        "openzeppelin"
+                    ],
+                    "allOf": [
+                        {
+                            "$ref": "#/definitions/types.TimeLockStandard"
+                        }
+                    ]
+                },
+                "tx_hash": {
+                    "type": "string"
                 }
             }
         },
-        "types.JSONB": {
+        "types.GetSupportChainsResponse": {
             "type": "object",
-            "additionalProperties": true
+            "properties": {
+                "chains": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/types.SupportChain"
+                    }
+                },
+                "total": {
+                    "type": "integer"
+                }
+            }
+        },
+        "types.GetTimeLockListResponse": {
+            "type": "object",
+            "properties": {
+                "list": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/types.TimeLock"
+                    }
+                },
+                "page": {
+                    "type": "integer"
+                },
+                "page_size": {
+                    "type": "integer"
+                },
+                "total": {
+                    "type": "integer"
+                }
+            }
+        },
+        "types.ImportTimeLockRequest": {
+            "type": "object",
+            "required": [
+                "abi",
+                "chain_id",
+                "chain_name",
+                "contract_address",
+                "standard"
+            ],
+            "properties": {
+                "abi": {
+                    "description": "用于验证合约",
+                    "type": "string"
+                },
+                "chain_id": {
+                    "type": "integer"
+                },
+                "chain_name": {
+                    "type": "string"
+                },
+                "contract_address": {
+                    "type": "string"
+                },
+                "remark": {
+                    "type": "string",
+                    "maxLength": 500
+                },
+                "standard": {
+                    "enum": [
+                        "compound",
+                        "openzeppelin"
+                    ],
+                    "allOf": [
+                        {
+                            "$ref": "#/definitions/types.TimeLockStandard"
+                        }
+                    ]
+                }
+            }
         },
         "types.RefreshTokenRequest": {
             "type": "object",
@@ -607,14 +2051,64 @@ const docTemplate = `{
                 }
             }
         },
+        "types.SupportChain": {
+            "type": "object",
+            "properties": {
+                "chain_id": {
+                    "description": "链ID",
+                    "type": "integer"
+                },
+                "chain_name": {
+                    "description": "Covalent API的chainName",
+                    "type": "string"
+                },
+                "created_at": {
+                    "type": "string"
+                },
+                "display_name": {
+                    "description": "显示名称",
+                    "type": "string"
+                },
+                "id": {
+                    "type": "integer"
+                },
+                "is_active": {
+                    "description": "是否激活",
+                    "type": "boolean"
+                },
+                "is_testnet": {
+                    "description": "是否是测试网",
+                    "type": "boolean"
+                },
+                "logo_url": {
+                    "description": "链Logo URL",
+                    "type": "string"
+                },
+                "native_token": {
+                    "description": "原生代币符号",
+                    "type": "string"
+                },
+                "updated_at": {
+                    "type": "string"
+                }
+            }
+        },
         "types.SwitchChainRequest": {
             "type": "object",
             "required": [
-                "chain_id"
+                "chain_id",
+                "message",
+                "signature"
             ],
             "properties": {
                 "chain_id": {
                     "type": "integer"
+                },
+                "message": {
+                    "type": "string"
+                },
+                "signature": {
+                    "type": "string"
                 }
             }
         },
@@ -638,10 +2132,217 @@ const docTemplate = `{
                 }
             }
         },
+        "types.TimeLock": {
+            "type": "object",
+            "properties": {
+                "admin": {
+                    "description": "管理员地址",
+                    "type": "string"
+                },
+                "chain_id": {
+                    "description": "所在链ID",
+                    "type": "integer"
+                },
+                "chain_name": {
+                    "description": "链名称（如eth-mainnet）",
+                    "type": "string"
+                },
+                "contract_address": {
+                    "description": "合约地址",
+                    "type": "string"
+                },
+                "created_at": {
+                    "type": "string"
+                },
+                "creator_address": {
+                    "description": "创建者地址（创建时使用）",
+                    "type": "string"
+                },
+                "executors": {
+                    "description": "执行者地址列表（JSON格式）",
+                    "type": "string"
+                },
+                "id": {
+                    "type": "integer"
+                },
+                "min_delay": {
+                    "description": "最小延迟时间（秒）",
+                    "type": "integer"
+                },
+                "proposers": {
+                    "description": "提议者地址列表（JSON格式）",
+                    "type": "string"
+                },
+                "remark": {
+                    "description": "备注",
+                    "type": "string"
+                },
+                "standard": {
+                    "description": "合约标准",
+                    "allOf": [
+                        {
+                            "$ref": "#/definitions/types.TimeLockStandard"
+                        }
+                    ]
+                },
+                "status": {
+                    "description": "状态",
+                    "allOf": [
+                        {
+                            "$ref": "#/definitions/types.TimeLockStatus"
+                        }
+                    ]
+                },
+                "tx_hash": {
+                    "description": "创建交易hash（创建时使用）",
+                    "type": "string"
+                },
+                "updated_at": {
+                    "type": "string"
+                },
+                "wallet_address": {
+                    "description": "钱包地址",
+                    "type": "string"
+                }
+            }
+        },
+        "types.TimeLockDetailResponse": {
+            "type": "object",
+            "properties": {
+                "admin": {
+                    "description": "管理员地址",
+                    "type": "string"
+                },
+                "chain_id": {
+                    "description": "所在链ID",
+                    "type": "integer"
+                },
+                "chain_name": {
+                    "description": "链名称（如eth-mainnet）",
+                    "type": "string"
+                },
+                "contract_address": {
+                    "description": "合约地址",
+                    "type": "string"
+                },
+                "created_at": {
+                    "type": "string"
+                },
+                "creator_address": {
+                    "description": "创建者地址（创建时使用）",
+                    "type": "string"
+                },
+                "executors": {
+                    "description": "执行者地址列表（JSON格式）",
+                    "type": "string"
+                },
+                "executors_list": {
+                    "description": "解析后的执行者列表",
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    }
+                },
+                "id": {
+                    "type": "integer"
+                },
+                "min_delay": {
+                    "description": "最小延迟时间（秒）",
+                    "type": "integer"
+                },
+                "proposers": {
+                    "description": "提议者地址列表（JSON格式）",
+                    "type": "string"
+                },
+                "proposers_list": {
+                    "description": "解析后的提议者列表",
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    }
+                },
+                "remark": {
+                    "description": "备注",
+                    "type": "string"
+                },
+                "standard": {
+                    "description": "合约标准",
+                    "allOf": [
+                        {
+                            "$ref": "#/definitions/types.TimeLockStandard"
+                        }
+                    ]
+                },
+                "status": {
+                    "description": "状态",
+                    "allOf": [
+                        {
+                            "$ref": "#/definitions/types.TimeLockStatus"
+                        }
+                    ]
+                },
+                "tx_hash": {
+                    "description": "创建交易hash（创建时使用）",
+                    "type": "string"
+                },
+                "updated_at": {
+                    "type": "string"
+                },
+                "wallet_address": {
+                    "description": "钱包地址",
+                    "type": "string"
+                }
+            }
+        },
+        "types.TimeLockStandard": {
+            "type": "string",
+            "enum": [
+                "compound",
+                "openzeppelin"
+            ],
+            "x-enum-varnames": [
+                "CompoundStandard",
+                "OpenzeppelinStandard"
+            ]
+        },
+        "types.TimeLockStatus": {
+            "type": "string",
+            "enum": [
+                "active",
+                "inactive",
+                "deleted"
+            ],
+            "x-enum-comments": {
+                "TimeLockActive": "激活状态",
+                "TimeLockDeleted": "已删除",
+                "TimeLockInactive": "非激活状态"
+            },
+            "x-enum-varnames": [
+                "TimeLockActive",
+                "TimeLockInactive",
+                "TimeLockDeleted"
+            ]
+        },
+        "types.UpdateTimeLockRequest": {
+            "type": "object",
+            "required": [
+                "id"
+            ],
+            "properties": {
+                "id": {
+                    "type": "integer"
+                },
+                "remark": {
+                    "type": "string",
+                    "maxLength": 500
+                }
+            }
+        },
         "types.User": {
             "type": "object",
             "properties": {
                 "chain_id": {
+                    "description": "当前使用的链ID（用于timelock合约）",
                     "type": "integer"
                 },
                 "created_at": {
@@ -653,9 +2354,6 @@ const docTemplate = `{
                 "last_login": {
                     "type": "string"
                 },
-                "preferences": {
-                    "$ref": "#/definitions/types.JSONB"
-                },
                 "status": {
                     "type": "integer"
                 },
@@ -663,6 +2361,7 @@ const docTemplate = `{
                     "type": "string"
                 },
                 "wallet_address": {
+                    "description": "钱包地址作为唯一标识",
                     "type": "string"
                 }
             }
@@ -670,21 +2369,15 @@ const docTemplate = `{
         "types.UserAssetResponse": {
             "type": "object",
             "properties": {
-                "last_updated": {
-                    "type": "string"
-                },
-                "other_chains": {
-                    "description": "为空",
+                "assets": {
+                    "description": "所有支持链上的资产，按价值从高到低排序",
                     "type": "array",
                     "items": {
-                        "$ref": "#/definitions/types.ChainAssetInfo"
+                        "$ref": "#/definitions/types.AssetInfo"
                     }
                 },
-                "primary_chain": {
-                    "$ref": "#/definitions/types.ChainAssetInfo"
-                },
-                "primary_chain_id": {
-                    "type": "integer"
+                "last_updated": {
+                    "type": "string"
                 },
                 "total_usd_value": {
                     "type": "number"
@@ -706,9 +2399,6 @@ const docTemplate = `{
                 "last_login": {
                     "type": "string"
                 },
-                "preferences": {
-                    "$ref": "#/definitions/types.JSONB"
-                },
                 "wallet_address": {
                     "type": "string"
                 }
@@ -724,6 +2414,7 @@ const docTemplate = `{
             ],
             "properties": {
                 "chain_id": {
+                    "description": "初始连接的链ID",
                     "type": "integer"
                 },
                 "message": {
