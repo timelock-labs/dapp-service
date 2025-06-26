@@ -52,13 +52,13 @@ func healthCheck(c *gin.Context) {
 	c.JSON(http.StatusOK, gin.H{
 		"status":  "ok",
 		"service": "timelocker-backend",
-		"version": "1.0.0",
+		"version": "2.0.0",
 	})
 }
 
 func main() {
 	logger.Init(logger.DefaultConfig())
-	logger.Info("Starting TimeLocker Backend v1.0.0")
+	logger.Info("Starting TimeLocker Backend v2.0.0")
 
 	// 1. 加载配置
 	cfg, err := config.LoadConfig()
