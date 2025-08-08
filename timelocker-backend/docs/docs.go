@@ -2197,14 +2197,9 @@ const docTemplate = `{
                 }
             }
         },
-        "/api/v1/email-notifications": {
+        "/api/v1/emails": {
             "get": {
-                "security": [
-                    {
-                        "BearerAuth": []
-                    }
-                ],
-                "description": "获取用户的邮件通知配置列表，支持分页查询。返回邮箱地址、验证状态、监听的合约等信息。",
+                "description": "获取当前用户的所有邮箱地址",
                 "consumes": [
                     "application/json"
                 ],
@@ -2212,89 +2207,50 @@ const docTemplate = `{
                     "application/json"
                 ],
                 "tags": [
-                    "Email Notifications"
+                    "Email"
                 ],
-                "summary": "获取邮件通知配置列表",
+                "summary": "获取用户邮箱列表",
                 "parameters": [
                     {
                         "type": "integer",
                         "default": 1,
-                        "description": "页码",
+                        "description": "页码，默认为1",
                         "name": "page",
                         "in": "query"
                     },
                     {
                         "type": "integer",
-                        "default": 20,
-                        "description": "每页数量",
+                        "default": 10,
+                        "description": "每页大小，默认为10",
                         "name": "page_size",
                         "in": "query"
                     }
                 ],
                 "responses": {
                     "200": {
-                        "description": "获取成功",
+                        "description": "OK",
                         "schema": {
-                            "allOf": [
-                                {
-                                    "$ref": "#/definitions/types.APIResponse"
-                                },
-                                {
-                                    "type": "object",
-                                    "properties": {
-                                        "data": {
-                                            "$ref": "#/definitions/types.EmailNotificationListResponse"
-                                        }
-                                    }
-                                }
-                            ]
+                            "$ref": "#/definitions/types.EmailListResponse"
                         }
                     },
                     "401": {
-                        "description": "未认证或令牌无效",
+                        "description": "未授权",
                         "schema": {
-                            "allOf": [
-                                {
-                                    "$ref": "#/definitions/types.APIResponse"
-                                },
-                                {
-                                    "type": "object",
-                                    "properties": {
-                                        "error": {
-                                            "$ref": "#/definitions/types.APIError"
-                                        }
-                                    }
-                                }
-                            ]
+                            "type": "object",
+                            "additionalProperties": true
                         }
                     },
                     "500": {
                         "description": "服务器内部错误",
                         "schema": {
-                            "allOf": [
-                                {
-                                    "$ref": "#/definitions/types.APIResponse"
-                                },
-                                {
-                                    "type": "object",
-                                    "properties": {
-                                        "error": {
-                                            "$ref": "#/definitions/types.APIError"
-                                        }
-                                    }
-                                }
-                            ]
+                            "type": "object",
+                            "additionalProperties": true
                         }
                     }
                 }
             },
             "post": {
-                "security": [
-                    {
-                        "BearerAuth": []
-                    }
-                ],
-                "description": "为用户添加邮件通知配置，支持设置邮箱地址、备注和监听的timelock合约。添加后会发送验证码到邮箱进行验证。",
+                "description": "为当前用户添加新的邮箱地址，当前API返回邮箱ID，需要配合邮箱验证API使用",
                 "consumes": [
                     "application/json"
                 ],
@@ -2302,117 +2258,61 @@ const docTemplate = `{
                     "application/json"
                 ],
                 "tags": [
-                    "Email Notifications"
+                    "Email"
                 ],
-                "summary": "添加邮件通知配置",
+                "summary": "添加邮箱",
                 "parameters": [
                     {
-                        "description": "添加邮件通知请求体",
+                        "description": "添加邮箱请求",
                         "name": "request",
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/types.AddEmailNotificationRequest"
+                            "$ref": "#/definitions/types.AddEmailRequest"
                         }
                     }
                 ],
                 "responses": {
                     "200": {
-                        "description": "添加成功，返回邮件通知配置信息",
+                        "description": "OK",
                         "schema": {
-                            "allOf": [
-                                {
-                                    "$ref": "#/definitions/types.APIResponse"
-                                },
-                                {
-                                    "type": "object",
-                                    "properties": {
-                                        "data": {
-                                            "$ref": "#/definitions/types.EmailNotificationResponse"
-                                        }
-                                    }
-                                }
-                            ]
+                            "$ref": "#/definitions/types.AddEmailResponse"
                         }
                     },
                     "400": {
                         "description": "请求参数错误",
                         "schema": {
-                            "allOf": [
-                                {
-                                    "$ref": "#/definitions/types.APIResponse"
-                                },
-                                {
-                                    "type": "object",
-                                    "properties": {
-                                        "error": {
-                                            "$ref": "#/definitions/types.APIError"
-                                        }
-                                    }
-                                }
-                            ]
+                            "type": "object",
+                            "additionalProperties": true
                         }
                     },
                     "401": {
-                        "description": "未认证或令牌无效",
+                        "description": "未授权",
                         "schema": {
-                            "allOf": [
-                                {
-                                    "$ref": "#/definitions/types.APIResponse"
-                                },
-                                {
-                                    "type": "object",
-                                    "properties": {
-                                        "error": {
-                                            "$ref": "#/definitions/types.APIError"
-                                        }
-                                    }
-                                }
-                            ]
+                            "type": "object",
+                            "additionalProperties": true
                         }
                     },
                     "409": {
                         "description": "邮箱已存在",
                         "schema": {
-                            "allOf": [
-                                {
-                                    "$ref": "#/definitions/types.APIResponse"
-                                },
-                                {
-                                    "type": "object",
-                                    "properties": {
-                                        "error": {
-                                            "$ref": "#/definitions/types.APIError"
-                                        }
-                                    }
-                                }
-                            ]
+                            "type": "object",
+                            "additionalProperties": true
                         }
                     },
                     "500": {
                         "description": "服务器内部错误",
                         "schema": {
-                            "allOf": [
-                                {
-                                    "$ref": "#/definitions/types.APIResponse"
-                                },
-                                {
-                                    "type": "object",
-                                    "properties": {
-                                        "error": {
-                                            "$ref": "#/definitions/types.APIError"
-                                        }
-                                    }
-                                }
-                            ]
+                            "type": "object",
+                            "additionalProperties": true
                         }
                     }
                 }
             }
         },
-        "/api/v1/email-notifications/emergency-reply": {
-            "get": {
-                "description": "处理应急邮件的回复确认。用户点击应急邮件中的确认按钮时调用此接口。不需要认证，通过token验证身份。",
+        "/api/v1/emails/send-verification": {
+            "post": {
+                "description": "向指定邮箱发送验证码，如果AddEmail返回成功，则使用返回的ID发送验证码即可；若AddEmail返回邮箱存在，则直接调用此API发送验证码（即重发验证码）",
                 "consumes": [
                     "application/json"
                 ],
@@ -2420,102 +2320,69 @@ const docTemplate = `{
                     "application/json"
                 ],
                 "tags": [
-                    "Email Notifications"
+                    "Email"
                 ],
-                "summary": "应急邮件回复",
+                "summary": "发送验证码",
                 "parameters": [
                     {
-                        "type": "string",
-                        "description": "应急邮件回复token",
-                        "name": "token",
-                        "in": "query",
-                        "required": true
+                        "description": "发送验证码请求",
+                        "name": "request",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/types.SendVerificationCodeRequest"
+                        }
                     }
                 ],
                 "responses": {
                     "200": {
-                        "description": "回复成功",
+                        "description": "OK",
                         "schema": {
-                            "allOf": [
-                                {
-                                    "$ref": "#/definitions/types.APIResponse"
-                                },
-                                {
-                                    "type": "object",
-                                    "properties": {
-                                        "data": {
-                                            "$ref": "#/definitions/types.EmergencyReplyResponse"
-                                        }
-                                    }
-                                }
-                            ]
+                            "type": "object",
+                            "additionalProperties": true
                         }
                     },
                     "400": {
                         "description": "请求参数错误",
                         "schema": {
-                            "allOf": [
-                                {
-                                    "$ref": "#/definitions/types.APIResponse"
-                                },
-                                {
-                                    "type": "object",
-                                    "properties": {
-                                        "error": {
-                                            "$ref": "#/definitions/types.APIError"
-                                        }
-                                    }
-                                }
-                            ]
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    },
+                    "401": {
+                        "description": "未授权",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
                         }
                     },
                     "404": {
-                        "description": "回复token不存在或已过期",
+                        "description": "邮箱不存在",
                         "schema": {
-                            "allOf": [
-                                {
-                                    "$ref": "#/definitions/types.APIResponse"
-                                },
-                                {
-                                    "type": "object",
-                                    "properties": {
-                                        "error": {
-                                            "$ref": "#/definitions/types.APIError"
-                                        }
-                                    }
-                                }
-                            ]
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    },
+                    "429": {
+                        "description": "发送过于频繁",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
                         }
                     },
                     "500": {
                         "description": "服务器内部错误",
                         "schema": {
-                            "allOf": [
-                                {
-                                    "$ref": "#/definitions/types.APIResponse"
-                                },
-                                {
-                                    "type": "object",
-                                    "properties": {
-                                        "error": {
-                                            "$ref": "#/definitions/types.APIError"
-                                        }
-                                    }
-                                }
-                            ]
+                            "type": "object",
+                            "additionalProperties": true
                         }
                     }
                 }
             }
         },
-        "/api/v1/email-notifications/logs": {
+        "/api/v1/emails/subscriptions": {
             "get": {
-                "security": [
-                    {
-                        "BearerAuth": []
-                    }
-                ],
-                "description": "获取用户相关的邮件发送记录，包括发送状态、时间和应急邮件回复状态等信息。",
+                "description": "获取当前用户的所有邮箱订阅",
                 "consumes": [
                     "application/json"
                 ],
@@ -2523,94 +2390,50 @@ const docTemplate = `{
                     "application/json"
                 ],
                 "tags": [
-                    "Email Notifications"
+                    "Email"
                 ],
-                "summary": "获取邮件发送记录",
+                "summary": "获取用户订阅列表",
                 "parameters": [
                     {
                         "type": "integer",
                         "default": 1,
-                        "description": "页码",
+                        "description": "页码，默认为1",
                         "name": "page",
                         "in": "query"
                     },
                     {
                         "type": "integer",
-                        "default": 20,
-                        "description": "每页数量",
+                        "default": 10,
+                        "description": "每页大小，默认为10",
                         "name": "page_size",
                         "in": "query"
                     }
                 ],
                 "responses": {
                     "200": {
-                        "description": "获取成功",
+                        "description": "OK",
                         "schema": {
-                            "allOf": [
-                                {
-                                    "$ref": "#/definitions/types.APIResponse"
-                                },
-                                {
-                                    "type": "object",
-                                    "properties": {
-                                        "data": {
-                                            "type": "array",
-                                            "items": {
-                                                "$ref": "#/definitions/types.EmailSendLogResponse"
-                                            }
-                                        }
-                                    }
-                                }
-                            ]
+                            "$ref": "#/definitions/types.SubscriptionListResponse"
                         }
                     },
                     "401": {
-                        "description": "未认证或令牌无效",
+                        "description": "未授权",
                         "schema": {
-                            "allOf": [
-                                {
-                                    "$ref": "#/definitions/types.APIResponse"
-                                },
-                                {
-                                    "type": "object",
-                                    "properties": {
-                                        "error": {
-                                            "$ref": "#/definitions/types.APIError"
-                                        }
-                                    }
-                                }
-                            ]
+                            "type": "object",
+                            "additionalProperties": true
                         }
                     },
                     "500": {
                         "description": "服务器内部错误",
                         "schema": {
-                            "allOf": [
-                                {
-                                    "$ref": "#/definitions/types.APIResponse"
-                                },
-                                {
-                                    "type": "object",
-                                    "properties": {
-                                        "error": {
-                                            "$ref": "#/definitions/types.APIError"
-                                        }
-                                    }
-                                }
-                            ]
+                            "type": "object",
+                            "additionalProperties": true
                         }
                     }
                 }
-            }
-        },
-        "/api/v1/email-notifications/resend-code": {
+            },
             "post": {
-                "security": [
-                    {
-                        "BearerAuth": []
-                    }
-                ],
-                "description": "重新发送邮箱验证码。如果之前的验证码过期或丢失，可以使用此接口重新发送。",
+                "description": "为指定邮箱创建合约通知订阅，NotifyOn 为空，则默认通知所有状态",
                 "consumes": [
                     "application/json"
                 ],
@@ -2618,110 +2441,69 @@ const docTemplate = `{
                     "application/json"
                 ],
                 "tags": [
-                    "Email Notifications"
+                    "Email"
                 ],
-                "summary": "重发验证码",
+                "summary": "创建订阅",
                 "parameters": [
                     {
-                        "description": "重发验证码请求体",
+                        "description": "创建订阅请求",
                         "name": "request",
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/types.ResendVerificationRequest"
+                            "$ref": "#/definitions/types.CreateSubscriptionRequest"
                         }
                     }
                 ],
                 "responses": {
-                    "200": {
-                        "description": "验证码发送成功",
+                    "201": {
+                        "description": "Created",
                         "schema": {
-                            "$ref": "#/definitions/types.APIResponse"
+                            "type": "object",
+                            "additionalProperties": true
                         }
                     },
                     "400": {
-                        "description": "请求参数错误或邮箱已验证",
+                        "description": "请求参数错误",
                         "schema": {
-                            "allOf": [
-                                {
-                                    "$ref": "#/definitions/types.APIResponse"
-                                },
-                                {
-                                    "type": "object",
-                                    "properties": {
-                                        "error": {
-                                            "$ref": "#/definitions/types.APIError"
-                                        }
-                                    }
-                                }
-                            ]
+                            "type": "object",
+                            "additionalProperties": true
                         }
                     },
                     "401": {
-                        "description": "未认证或令牌无效",
+                        "description": "未授权",
                         "schema": {
-                            "allOf": [
-                                {
-                                    "$ref": "#/definitions/types.APIResponse"
-                                },
-                                {
-                                    "type": "object",
-                                    "properties": {
-                                        "error": {
-                                            "$ref": "#/definitions/types.APIError"
-                                        }
-                                    }
-                                }
-                            ]
+                            "type": "object",
+                            "additionalProperties": true
                         }
                     },
                     "404": {
-                        "description": "邮件配置不存在",
+                        "description": "邮箱不存在",
                         "schema": {
-                            "allOf": [
-                                {
-                                    "$ref": "#/definitions/types.APIResponse"
-                                },
-                                {
-                                    "type": "object",
-                                    "properties": {
-                                        "error": {
-                                            "$ref": "#/definitions/types.APIError"
-                                        }
-                                    }
-                                }
-                            ]
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    },
+                    "409": {
+                        "description": "订阅已存在",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
                         }
                     },
                     "500": {
                         "description": "服务器内部错误",
                         "schema": {
-                            "allOf": [
-                                {
-                                    "$ref": "#/definitions/types.APIResponse"
-                                },
-                                {
-                                    "type": "object",
-                                    "properties": {
-                                        "error": {
-                                            "$ref": "#/definitions/types.APIError"
-                                        }
-                                    }
-                                }
-                            ]
+                            "type": "object",
+                            "additionalProperties": true
                         }
                     }
                 }
             }
         },
-        "/api/v1/email-notifications/verified-emails": {
-            "get": {
-                "security": [
-                    {
-                        "BearerAuth": []
-                    }
-                ],
-                "description": "获取用户的已验证邮箱列表，用于在timelock合约管理中选择监听邮箱。只返回已验证且激活的邮箱。",
+        "/api/v1/emails/subscriptions/{id}": {
+            "put": {
+                "description": "更新指定订阅的配置",
                 "consumes": [
                     "application/json"
                 ],
@@ -2729,78 +2511,67 @@ const docTemplate = `{
                     "application/json"
                 ],
                 "tags": [
-                    "Email Notifications"
+                    "Email"
                 ],
-                "summary": "获取已验证邮箱列表",
+                "summary": "更新订阅",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "订阅ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "description": "更新订阅请求",
+                        "name": "request",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/types.UpdateSubscriptionRequest"
+                        }
+                    }
+                ],
                 "responses": {
                     "200": {
-                        "description": "获取成功",
+                        "description": "OK",
                         "schema": {
-                            "allOf": [
-                                {
-                                    "$ref": "#/definitions/types.APIResponse"
-                                },
-                                {
-                                    "type": "object",
-                                    "properties": {
-                                        "data": {
-                                            "type": "array",
-                                            "items": {
-                                                "$ref": "#/definitions/types.EmailNotificationResponse"
-                                            }
-                                        }
-                                    }
-                                }
-                            ]
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    },
+                    "400": {
+                        "description": "请求参数错误",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
                         }
                     },
                     "401": {
-                        "description": "未认证或令牌无效",
+                        "description": "未授权",
                         "schema": {
-                            "allOf": [
-                                {
-                                    "$ref": "#/definitions/types.APIResponse"
-                                },
-                                {
-                                    "type": "object",
-                                    "properties": {
-                                        "error": {
-                                            "$ref": "#/definitions/types.APIError"
-                                        }
-                                    }
-                                }
-                            ]
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    },
+                    "404": {
+                        "description": "订阅不存在",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
                         }
                     },
                     "500": {
                         "description": "服务器内部错误",
                         "schema": {
-                            "allOf": [
-                                {
-                                    "$ref": "#/definitions/types.APIResponse"
-                                },
-                                {
-                                    "type": "object",
-                                    "properties": {
-                                        "error": {
-                                            "$ref": "#/definitions/types.APIError"
-                                        }
-                                    }
-                                }
-                            ]
+                            "type": "object",
+                            "additionalProperties": true
                         }
                     }
                 }
-            }
-        },
-        "/api/v1/email-notifications/verify": {
-            "post": {
-                "security": [
-                    {
-                        "BearerAuth": []
-                    }
-                ],
-                "description": "使用验证码验证邮箱地址。验证成功后，该邮箱可以接收timelock合约的通知邮件。",
+            },
+            "delete": {
+                "description": "删除指定的邮箱订阅",
                 "consumes": [
                     "application/json"
                 ],
@@ -2808,12 +2579,73 @@ const docTemplate = `{
                     "application/json"
                 ],
                 "tags": [
-                    "Email Notifications"
+                    "Email"
+                ],
+                "summary": "删除订阅",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "订阅ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    },
+                    "400": {
+                        "description": "请求参数错误",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    },
+                    "401": {
+                        "description": "未授权",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    },
+                    "404": {
+                        "description": "订阅不存在",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    },
+                    "500": {
+                        "description": "服务器内部错误",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    }
+                }
+            }
+        },
+        "/api/v1/emails/verify": {
+            "post": {
+                "description": "使用验证码验证邮箱地址",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Email"
                 ],
                 "summary": "验证邮箱",
                 "parameters": [
                     {
-                        "description": "验证邮箱请求体",
+                        "description": "验证邮箱请求",
                         "name": "request",
                         "in": "body",
                         "required": true,
@@ -2824,94 +2656,53 @@ const docTemplate = `{
                 ],
                 "responses": {
                     "200": {
-                        "description": "验证成功",
+                        "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/types.APIResponse"
+                            "type": "object",
+                            "additionalProperties": true
                         }
                     },
                     "400": {
-                        "description": "请求参数错误或验证码无效",
+                        "description": "请求参数错误",
                         "schema": {
-                            "allOf": [
-                                {
-                                    "$ref": "#/definitions/types.APIResponse"
-                                },
-                                {
-                                    "type": "object",
-                                    "properties": {
-                                        "error": {
-                                            "$ref": "#/definitions/types.APIError"
-                                        }
-                                    }
-                                }
-                            ]
+                            "type": "object",
+                            "additionalProperties": true
                         }
                     },
                     "401": {
-                        "description": "未认证或令牌无效",
+                        "description": "未授权",
                         "schema": {
-                            "allOf": [
-                                {
-                                    "$ref": "#/definitions/types.APIResponse"
-                                },
-                                {
-                                    "type": "object",
-                                    "properties": {
-                                        "error": {
-                                            "$ref": "#/definitions/types.APIError"
-                                        }
-                                    }
-                                }
-                            ]
+                            "type": "object",
+                            "additionalProperties": true
                         }
                     },
                     "404": {
-                        "description": "邮件配置不存在",
+                        "description": "邮箱不存在",
                         "schema": {
-                            "allOf": [
-                                {
-                                    "$ref": "#/definitions/types.APIResponse"
-                                },
-                                {
-                                    "type": "object",
-                                    "properties": {
-                                        "error": {
-                                            "$ref": "#/definitions/types.APIError"
-                                        }
-                                    }
-                                }
-                            ]
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    },
+                    "422": {
+                        "description": "验证码无效或已过期",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
                         }
                     },
                     "500": {
                         "description": "服务器内部错误",
                         "schema": {
-                            "allOf": [
-                                {
-                                    "$ref": "#/definitions/types.APIResponse"
-                                },
-                                {
-                                    "type": "object",
-                                    "properties": {
-                                        "error": {
-                                            "$ref": "#/definitions/types.APIError"
-                                        }
-                                    }
-                                }
-                            ]
+                            "type": "object",
+                            "additionalProperties": true
                         }
                     }
                 }
             }
         },
-        "/api/v1/email-notifications/{email}": {
-            "get": {
-                "security": [
-                    {
-                        "BearerAuth": []
-                    }
-                ],
-                "description": "根据邮箱地址获取特定的邮件通知配置详情，包括验证状态和监听的合约列表。",
+        "/api/v1/emails/{id}": {
+            "delete": {
+                "description": "删除指定的邮箱地址",
                 "consumes": [
                     "application/json"
                 ],
@@ -2919,100 +2710,60 @@ const docTemplate = `{
                     "application/json"
                 ],
                 "tags": [
-                    "Email Notifications"
+                    "Email"
                 ],
-                "summary": "获取单个邮件通知配置",
+                "summary": "删除邮箱",
                 "parameters": [
                     {
-                        "type": "string",
-                        "description": "邮箱地址",
-                        "name": "email",
+                        "type": "integer",
+                        "description": "用户邮箱ID",
+                        "name": "id",
                         "in": "path",
                         "required": true
                     }
                 ],
                 "responses": {
                     "200": {
-                        "description": "获取成功",
+                        "description": "OK",
                         "schema": {
-                            "allOf": [
-                                {
-                                    "$ref": "#/definitions/types.APIResponse"
-                                },
-                                {
-                                    "type": "object",
-                                    "properties": {
-                                        "data": {
-                                            "$ref": "#/definitions/types.EmailNotificationResponse"
-                                        }
-                                    }
-                                }
-                            ]
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    },
+                    "400": {
+                        "description": "请求参数错误",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
                         }
                     },
                     "401": {
-                        "description": "未认证或令牌无效",
+                        "description": "未授权",
                         "schema": {
-                            "allOf": [
-                                {
-                                    "$ref": "#/definitions/types.APIResponse"
-                                },
-                                {
-                                    "type": "object",
-                                    "properties": {
-                                        "error": {
-                                            "$ref": "#/definitions/types.APIError"
-                                        }
-                                    }
-                                }
-                            ]
+                            "type": "object",
+                            "additionalProperties": true
                         }
                     },
                     "404": {
-                        "description": "邮件配置不存在",
+                        "description": "邮箱不存在",
                         "schema": {
-                            "allOf": [
-                                {
-                                    "$ref": "#/definitions/types.APIResponse"
-                                },
-                                {
-                                    "type": "object",
-                                    "properties": {
-                                        "error": {
-                                            "$ref": "#/definitions/types.APIError"
-                                        }
-                                    }
-                                }
-                            ]
+                            "type": "object",
+                            "additionalProperties": true
                         }
                     },
                     "500": {
                         "description": "服务器内部错误",
                         "schema": {
-                            "allOf": [
-                                {
-                                    "$ref": "#/definitions/types.APIResponse"
-                                },
-                                {
-                                    "type": "object",
-                                    "properties": {
-                                        "error": {
-                                            "$ref": "#/definitions/types.APIError"
-                                        }
-                                    }
-                                }
-                            ]
+                            "type": "object",
+                            "additionalProperties": true
                         }
                     }
                 }
-            },
+            }
+        },
+        "/api/v1/emails/{id}/remark": {
             "put": {
-                "security": [
-                    {
-                        "BearerAuth": []
-                    }
-                ],
-                "description": "更新邮件通知配置的备注和监听的timelock合约列表。注意：无法更改邮箱地址，只能更新备注和合约列表。",
+                "description": "更新指定邮箱的备注信息",
                 "consumes": [
                     "application/json"
                 ],
@@ -3020,127 +2771,69 @@ const docTemplate = `{
                     "application/json"
                 ],
                 "tags": [
-                    "Email Notifications"
+                    "Email"
                 ],
-                "summary": "更新邮件通知配置",
+                "summary": "更新邮箱备注",
                 "parameters": [
                     {
-                        "type": "string",
-                        "description": "邮箱地址",
-                        "name": "email",
+                        "type": "integer",
+                        "description": "用户邮箱ID",
+                        "name": "id",
                         "in": "path",
                         "required": true
                     },
                     {
-                        "description": "更新邮件通知请求体",
+                        "description": "更新备注请求",
                         "name": "request",
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/types.UpdateEmailNotificationRequest"
+                            "$ref": "#/definitions/types.UpdateEmailRemarkRequest"
                         }
                     }
                 ],
                 "responses": {
                     "200": {
-                        "description": "更新成功",
+                        "description": "OK",
                         "schema": {
-                            "allOf": [
-                                {
-                                    "$ref": "#/definitions/types.APIResponse"
-                                },
-                                {
-                                    "type": "object",
-                                    "properties": {
-                                        "data": {
-                                            "$ref": "#/definitions/types.EmailNotificationResponse"
-                                        }
-                                    }
-                                }
-                            ]
+                            "type": "object",
+                            "additionalProperties": true
                         }
                     },
                     "400": {
-                        "description": "请求参数错误或邮箱未验证",
+                        "description": "请求参数错误",
                         "schema": {
-                            "allOf": [
-                                {
-                                    "$ref": "#/definitions/types.APIResponse"
-                                },
-                                {
-                                    "type": "object",
-                                    "properties": {
-                                        "error": {
-                                            "$ref": "#/definitions/types.APIError"
-                                        }
-                                    }
-                                }
-                            ]
+                            "type": "object",
+                            "additionalProperties": true
                         }
                     },
                     "401": {
-                        "description": "未认证或令牌无效",
+                        "description": "未授权",
                         "schema": {
-                            "allOf": [
-                                {
-                                    "$ref": "#/definitions/types.APIResponse"
-                                },
-                                {
-                                    "type": "object",
-                                    "properties": {
-                                        "error": {
-                                            "$ref": "#/definitions/types.APIError"
-                                        }
-                                    }
-                                }
-                            ]
+                            "type": "object",
+                            "additionalProperties": true
                         }
                     },
                     "404": {
-                        "description": "邮件配置不存在",
+                        "description": "邮箱不存在",
                         "schema": {
-                            "allOf": [
-                                {
-                                    "$ref": "#/definitions/types.APIResponse"
-                                },
-                                {
-                                    "type": "object",
-                                    "properties": {
-                                        "error": {
-                                            "$ref": "#/definitions/types.APIError"
-                                        }
-                                    }
-                                }
-                            ]
+                            "type": "object",
+                            "additionalProperties": true
                         }
                     },
                     "500": {
                         "description": "服务器内部错误",
                         "schema": {
-                            "allOf": [
-                                {
-                                    "$ref": "#/definitions/types.APIResponse"
-                                },
-                                {
-                                    "type": "object",
-                                    "properties": {
-                                        "error": {
-                                            "$ref": "#/definitions/types.APIError"
-                                        }
-                                    }
-                                }
-                            ]
+                            "type": "object",
+                            "additionalProperties": true
                         }
                     }
                 }
-            },
-            "delete": {
-                "security": [
-                    {
-                        "BearerAuth": []
-                    }
-                ],
-                "description": "删除指定的邮件通知配置。删除后该邮箱将不再接收timelock合约的通知邮件。",
+            }
+        },
+        "/api/v1/flows/cancelled": {
+            "get": {
+                "description": "获取已取消的timelock流程列表",
                 "consumes": [
                     "application/json"
                 ],
@@ -3148,77 +2841,430 @@ const docTemplate = `{
                     "application/json"
                 ],
                 "tags": [
-                    "Email Notifications"
+                    "Flow"
                 ],
-                "summary": "删除邮件通知配置",
+                "summary": "获取已取消的流程",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "default": 1,
+                        "description": "页码",
+                        "name": "page",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "default": 20,
+                        "description": "每页数量",
+                        "name": "page_size",
+                        "in": "query"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/types.FlowListResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/types.ErrorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/types.ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/api/v1/flows/executed": {
+            "get": {
+                "description": "获取已执行的timelock流程列表",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Flow"
+                ],
+                "summary": "获取已执行的流程",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "default": 1,
+                        "description": "页码",
+                        "name": "page",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "default": 20,
+                        "description": "每页数量",
+                        "name": "page_size",
+                        "in": "query"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/types.FlowListResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/types.ErrorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/types.ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/api/v1/flows/expired": {
+            "get": {
+                "description": "获取已过期的timelock流程列表（仅Compound）",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Flow"
+                ],
+                "summary": "获取已过期的流程",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "default": 1,
+                        "description": "页码",
+                        "name": "page",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "default": 20,
+                        "description": "每页数量",
+                        "name": "page_size",
+                        "in": "query"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/types.FlowListResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/types.ErrorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/types.ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/api/v1/flows/ready": {
+            "get": {
+                "description": "获取准备执行的timelock流程列表",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Flow"
+                ],
+                "summary": "获取准备执行的流程",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "default": 1,
+                        "description": "页码",
+                        "name": "page",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "default": 20,
+                        "description": "每页数量",
+                        "name": "page_size",
+                        "in": "query"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/types.FlowListResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/types.ErrorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/types.ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/api/v1/flows/stats": {
+            "get": {
+                "description": "获取流程的统计信息，可按发起人过滤",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Flow"
+                ],
+                "summary": "获取流程统计信息",
                 "parameters": [
                     {
                         "type": "string",
-                        "description": "邮箱地址",
-                        "name": "email",
+                        "description": "发起人地址（可选）",
+                        "name": "initiator_address",
+                        "in": "query"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/types.FlowStatsResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/types.ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/api/v1/flows/user": {
+            "get": {
+                "description": "根据发起人地址和状态获取流程列表",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Flow"
+                ],
+                "summary": "获取用户的流程列表",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "发起人地址",
+                        "name": "initiator_address",
+                        "in": "query",
+                        "required": true
+                    },
+                    {
+                        "enum": [
+                            "waiting",
+                            "ready",
+                            "executed",
+                            "cancelled",
+                            "expired"
+                        ],
+                        "type": "string",
+                        "description": "流程状态",
+                        "name": "status",
+                        "in": "query",
+                        "required": true
+                    },
+                    {
+                        "type": "integer",
+                        "default": 1,
+                        "description": "页码",
+                        "name": "page",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "default": 20,
+                        "description": "每页数量",
+                        "name": "page_size",
+                        "in": "query"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/types.FlowListResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/types.ErrorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/types.ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/api/v1/flows/waiting": {
+            "get": {
+                "description": "获取等待中的timelock流程列表",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Flow"
+                ],
+                "summary": "获取等待中的流程",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "default": 1,
+                        "description": "页码",
+                        "name": "page",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "default": 20,
+                        "description": "每页数量",
+                        "name": "page_size",
+                        "in": "query"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/types.FlowListResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/types.ErrorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/types.ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/api/v1/flows/{flow_id}/detail": {
+            "get": {
+                "description": "获取特定流程的详细信息，包括时间计算",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Flow"
+                ],
+                "summary": "获取流程详细信息",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "流程ID",
+                        "name": "flow_id",
                         "in": "path",
+                        "required": true
+                    },
+                    {
+                        "enum": [
+                            "compound",
+                            "openzeppelin"
+                        ],
+                        "type": "string",
+                        "description": "Timelock标准",
+                        "name": "timelock_standard",
+                        "in": "query",
+                        "required": true
+                    },
+                    {
+                        "type": "integer",
+                        "description": "链ID",
+                        "name": "chain_id",
+                        "in": "query",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "合约地址",
+                        "name": "contract_address",
+                        "in": "query",
                         "required": true
                     }
                 ],
                 "responses": {
                     "200": {
-                        "description": "删除成功",
+                        "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/types.APIResponse"
+                            "$ref": "#/definitions/types.FlowDetailResponse"
                         }
                     },
-                    "401": {
-                        "description": "未认证或令牌无效",
+                    "400": {
+                        "description": "Bad Request",
                         "schema": {
-                            "allOf": [
-                                {
-                                    "$ref": "#/definitions/types.APIResponse"
-                                },
-                                {
-                                    "type": "object",
-                                    "properties": {
-                                        "error": {
-                                            "$ref": "#/definitions/types.APIError"
-                                        }
-                                    }
-                                }
-                            ]
+                            "$ref": "#/definitions/types.ErrorResponse"
                         }
                     },
                     "404": {
-                        "description": "邮件配置不存在",
+                        "description": "Not Found",
                         "schema": {
-                            "allOf": [
-                                {
-                                    "$ref": "#/definitions/types.APIResponse"
-                                },
-                                {
-                                    "type": "object",
-                                    "properties": {
-                                        "error": {
-                                            "$ref": "#/definitions/types.APIError"
-                                        }
-                                    }
-                                }
-                            ]
+                            "$ref": "#/definitions/types.ErrorResponse"
                         }
                     },
                     "500": {
-                        "description": "服务器内部错误",
+                        "description": "Internal Server Error",
                         "schema": {
-                            "allOf": [
-                                {
-                                    "$ref": "#/definitions/types.APIResponse"
-                                },
-                                {
-                                    "type": "object",
-                                    "properties": {
-                                        "error": {
-                                            "$ref": "#/definitions/types.APIError"
-                                        }
-                                    }
-                                }
-                            ]
+                            "$ref": "#/definitions/types.ErrorResponse"
                         }
                     }
                 }
@@ -3277,14 +3323,14 @@ const docTemplate = `{
                 }
             }
         },
-        "/api/v1/timelock/compound/{id}/accept-admin": {
+        "/api/v1/timelock/create-or-import": {
             "post": {
                 "security": [
                     {
                         "BearerAuth": []
                     }
                 ],
-                "description": "接受成为Compound标准timelock合约的admin，需要前端调用钱包实现，通过该timelock合约执行acceptAdmin函数。只有当前的pending admin才能执行此操作。这是Compound timelock权限转移流程的第二步。",
+                "description": "创建新的或导入已存在的timelock合约记录。系统会从链上读取合约数据并验证其是否为有效的timelock合约。支持Compound和OpenZeppelin两种标准。",
                 "consumes": [
                     "application/json"
                 ],
@@ -3294,432 +3340,21 @@ const docTemplate = `{
                 "tags": [
                     "Timelock"
                 ],
-                "summary": "接受Compound timelock的admin权限",
+                "summary": "创建或导入timelock合约记录",
                 "parameters": [
                     {
-                        "type": "integer",
-                        "example": 1,
-                        "description": "Compound timelock合约的数据库ID",
-                        "name": "id",
-                        "in": "path",
-                        "required": true
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "成功接受admin权限",
-                        "schema": {
-                            "allOf": [
-                                {
-                                    "$ref": "#/definitions/types.APIResponse"
-                                },
-                                {
-                                    "type": "object",
-                                    "properties": {
-                                        "data": {
-                                            "type": "object"
-                                        }
-                                    }
-                                }
-                            ]
-                        }
-                    },
-                    "400": {
-                        "description": "请求参数错误",
-                        "schema": {
-                            "allOf": [
-                                {
-                                    "$ref": "#/definitions/types.APIResponse"
-                                },
-                                {
-                                    "type": "object",
-                                    "properties": {
-                                        "error": {
-                                            "$ref": "#/definitions/types.APIError"
-                                        }
-                                    }
-                                }
-                            ]
-                        }
-                    },
-                    "401": {
-                        "description": "未认证或令牌无效",
-                        "schema": {
-                            "allOf": [
-                                {
-                                    "$ref": "#/definitions/types.APIResponse"
-                                },
-                                {
-                                    "type": "object",
-                                    "properties": {
-                                        "error": {
-                                            "$ref": "#/definitions/types.APIError"
-                                        }
-                                    }
-                                }
-                            ]
-                        }
-                    },
-                    "403": {
-                        "description": "权限不足",
-                        "schema": {
-                            "allOf": [
-                                {
-                                    "$ref": "#/definitions/types.APIResponse"
-                                },
-                                {
-                                    "type": "object",
-                                    "properties": {
-                                        "error": {
-                                            "$ref": "#/definitions/types.APIError"
-                                        }
-                                    }
-                                }
-                            ]
-                        }
-                    },
-                    "404": {
-                        "description": "timelock合约不存在",
-                        "schema": {
-                            "allOf": [
-                                {
-                                    "$ref": "#/definitions/types.APIResponse"
-                                },
-                                {
-                                    "type": "object",
-                                    "properties": {
-                                        "error": {
-                                            "$ref": "#/definitions/types.APIError"
-                                        }
-                                    }
-                                }
-                            ]
-                        }
-                    },
-                    "500": {
-                        "description": "服务器内部错误",
-                        "schema": {
-                            "allOf": [
-                                {
-                                    "$ref": "#/definitions/types.APIResponse"
-                                },
-                                {
-                                    "type": "object",
-                                    "properties": {
-                                        "error": {
-                                            "$ref": "#/definitions/types.APIError"
-                                        }
-                                    }
-                                }
-                            ]
-                        }
-                    }
-                }
-            }
-        },
-        "/api/v1/timelock/compound/{id}/admin-permissions": {
-            "get": {
-                "security": [
-                    {
-                        "BearerAuth": []
-                    }
-                ],
-                "description": "检查当前用户对指定Compound timelock合约的管理权限，返回用户是否可以设置pending admin和是否可以接受admin权限。",
-                "consumes": [
-                    "application/json"
-                ],
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "Timelock"
-                ],
-                "summary": "检查用户对Compound timelock的admin权限",
-                "parameters": [
-                    {
-                        "type": "integer",
-                        "example": 1,
-                        "description": "Compound timelock合约的数据库ID",
-                        "name": "id",
-                        "in": "path",
-                        "required": true
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "成功获取权限信息",
-                        "schema": {
-                            "allOf": [
-                                {
-                                    "$ref": "#/definitions/types.APIResponse"
-                                },
-                                {
-                                    "type": "object",
-                                    "properties": {
-                                        "data": {
-                                            "$ref": "#/definitions/types.CheckAdminPermissionResponse"
-                                        }
-                                    }
-                                }
-                            ]
-                        }
-                    },
-                    "400": {
-                        "description": "请求参数错误",
-                        "schema": {
-                            "allOf": [
-                                {
-                                    "$ref": "#/definitions/types.APIResponse"
-                                },
-                                {
-                                    "type": "object",
-                                    "properties": {
-                                        "error": {
-                                            "$ref": "#/definitions/types.APIError"
-                                        }
-                                    }
-                                }
-                            ]
-                        }
-                    },
-                    "401": {
-                        "description": "未认证或令牌无效",
-                        "schema": {
-                            "allOf": [
-                                {
-                                    "$ref": "#/definitions/types.APIResponse"
-                                },
-                                {
-                                    "type": "object",
-                                    "properties": {
-                                        "error": {
-                                            "$ref": "#/definitions/types.APIError"
-                                        }
-                                    }
-                                }
-                            ]
-                        }
-                    },
-                    "404": {
-                        "description": "timelock合约不存在",
-                        "schema": {
-                            "allOf": [
-                                {
-                                    "$ref": "#/definitions/types.APIResponse"
-                                },
-                                {
-                                    "type": "object",
-                                    "properties": {
-                                        "error": {
-                                            "$ref": "#/definitions/types.APIError"
-                                        }
-                                    }
-                                }
-                            ]
-                        }
-                    },
-                    "500": {
-                        "description": "服务器内部错误",
-                        "schema": {
-                            "allOf": [
-                                {
-                                    "$ref": "#/definitions/types.APIResponse"
-                                },
-                                {
-                                    "type": "object",
-                                    "properties": {
-                                        "error": {
-                                            "$ref": "#/definitions/types.APIError"
-                                        }
-                                    }
-                                }
-                            ]
-                        }
-                    }
-                }
-            }
-        },
-        "/api/v1/timelock/compound/{id}/set-pending-admin": {
-            "post": {
-                "security": [
-                    {
-                        "BearerAuth": []
-                    }
-                ],
-                "description": "为Compound标准的timelock合约设置pending admin，需要前端调用钱包实现，通过该timelock合约执行setPendingAdmin函数。只有当前admin才能执行此操作。这是Compound timelock权限转移流程的第一步。",
-                "consumes": [
-                    "application/json"
-                ],
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "Timelock"
-                ],
-                "summary": "设置Compound timelock的pending admin",
-                "parameters": [
-                    {
-                        "type": "integer",
-                        "example": 1,
-                        "description": "Compound timelock合约的数据库ID",
-                        "name": "id",
-                        "in": "path",
-                        "required": true
-                    },
-                    {
-                        "description": "设置pending admin的请求体",
+                        "description": "创建或导入timelock合约的请求体",
                         "name": "request",
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/types.SetPendingAdminRequest"
+                            "$ref": "#/definitions/types.CreateOrImportTimelockContractRequest"
                         }
                     }
                 ],
                 "responses": {
                     "200": {
-                        "description": "成功设置pending admin",
-                        "schema": {
-                            "allOf": [
-                                {
-                                    "$ref": "#/definitions/types.APIResponse"
-                                },
-                                {
-                                    "type": "object",
-                                    "properties": {
-                                        "data": {
-                                            "type": "object"
-                                        }
-                                    }
-                                }
-                            ]
-                        }
-                    },
-                    "400": {
-                        "description": "请求参数错误",
-                        "schema": {
-                            "allOf": [
-                                {
-                                    "$ref": "#/definitions/types.APIResponse"
-                                },
-                                {
-                                    "type": "object",
-                                    "properties": {
-                                        "error": {
-                                            "$ref": "#/definitions/types.APIError"
-                                        }
-                                    }
-                                }
-                            ]
-                        }
-                    },
-                    "401": {
-                        "description": "未认证或令牌无效",
-                        "schema": {
-                            "allOf": [
-                                {
-                                    "$ref": "#/definitions/types.APIResponse"
-                                },
-                                {
-                                    "type": "object",
-                                    "properties": {
-                                        "error": {
-                                            "$ref": "#/definitions/types.APIError"
-                                        }
-                                    }
-                                }
-                            ]
-                        }
-                    },
-                    "403": {
-                        "description": "权限不足",
-                        "schema": {
-                            "allOf": [
-                                {
-                                    "$ref": "#/definitions/types.APIResponse"
-                                },
-                                {
-                                    "type": "object",
-                                    "properties": {
-                                        "error": {
-                                            "$ref": "#/definitions/types.APIError"
-                                        }
-                                    }
-                                }
-                            ]
-                        }
-                    },
-                    "404": {
-                        "description": "timelock合约不存在",
-                        "schema": {
-                            "allOf": [
-                                {
-                                    "$ref": "#/definitions/types.APIResponse"
-                                },
-                                {
-                                    "type": "object",
-                                    "properties": {
-                                        "error": {
-                                            "$ref": "#/definitions/types.APIError"
-                                        }
-                                    }
-                                }
-                            ]
-                        }
-                    },
-                    "500": {
-                        "description": "服务器内部错误",
-                        "schema": {
-                            "allOf": [
-                                {
-                                    "$ref": "#/definitions/types.APIResponse"
-                                },
-                                {
-                                    "type": "object",
-                                    "properties": {
-                                        "error": {
-                                            "$ref": "#/definitions/types.APIError"
-                                        }
-                                    }
-                                }
-                            ]
-                        }
-                    }
-                }
-            }
-        },
-        "/api/v1/timelock/create": {
-            "post": {
-                "security": [
-                    {
-                        "BearerAuth": []
-                    }
-                ],
-                "description": "创建新的timelock合约记录。支持Compound和OpenZeppelin两种标准。前端需要提供合约的详细信息，包括链ID、合约地址、标准类型、创建交易哈希以及相关的治理参数。(Compound标准需要提供admin, pendingAdmin需要为空; OpenZeppelin标准需要提供proposers, executors, cancellers, admin需要为全0地址, proposers就是cancellers)",
-                "consumes": [
-                    "application/json"
-                ],
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "Timelock"
-                ],
-                "summary": "创建timelock合约记录",
-                "parameters": [
-                    {
-                        "description": "创建timelock合约的请求体",
-                        "name": "request",
-                        "in": "body",
-                        "required": true,
-                        "schema": {
-                            "$ref": "#/definitions/types.CreateTimeLockRequest"
-                        }
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "成功创建timelock合约记录",
+                        "description": "成功创建或导入timelock合约记录",
                         "schema": {
                             "allOf": [
                                 {
@@ -3811,559 +3446,7 @@ const docTemplate = `{
                 }
             }
         },
-        "/api/v1/timelock/detail/{standard}/{id}": {
-            "get": {
-                "security": [
-                    {
-                        "BearerAuth": []
-                    }
-                ],
-                "description": "获取指定timelock合约的完整详细信息，包括合约的基本信息、治理参数以及用户权限信息。只有具有相应权限的用户才能查看详细信息。",
-                "consumes": [
-                    "application/json"
-                ],
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "Timelock"
-                ],
-                "summary": "获取timelock合约详细信息",
-                "parameters": [
-                    {
-                        "enum": [
-                            "compound",
-                            "openzeppelin"
-                        ],
-                        "type": "string",
-                        "example": "compound",
-                        "description": "合约标准",
-                        "name": "standard",
-                        "in": "path",
-                        "required": true
-                    },
-                    {
-                        "type": "integer",
-                        "example": 1,
-                        "description": "Timelock合约的数据库ID",
-                        "name": "id",
-                        "in": "path",
-                        "required": true
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "成功获取timelock合约详情",
-                        "schema": {
-                            "allOf": [
-                                {
-                                    "$ref": "#/definitions/types.APIResponse"
-                                },
-                                {
-                                    "type": "object",
-                                    "properties": {
-                                        "data": {
-                                            "$ref": "#/definitions/types.TimeLockDetailResponse"
-                                        }
-                                    }
-                                }
-                            ]
-                        }
-                    },
-                    "400": {
-                        "description": "请求参数错误",
-                        "schema": {
-                            "allOf": [
-                                {
-                                    "$ref": "#/definitions/types.APIResponse"
-                                },
-                                {
-                                    "type": "object",
-                                    "properties": {
-                                        "error": {
-                                            "$ref": "#/definitions/types.APIError"
-                                        }
-                                    }
-                                }
-                            ]
-                        }
-                    },
-                    "401": {
-                        "description": "未认证或令牌无效",
-                        "schema": {
-                            "allOf": [
-                                {
-                                    "$ref": "#/definitions/types.APIResponse"
-                                },
-                                {
-                                    "type": "object",
-                                    "properties": {
-                                        "error": {
-                                            "$ref": "#/definitions/types.APIError"
-                                        }
-                                    }
-                                }
-                            ]
-                        }
-                    },
-                    "403": {
-                        "description": "无权访问此timelock合约",
-                        "schema": {
-                            "allOf": [
-                                {
-                                    "$ref": "#/definitions/types.APIResponse"
-                                },
-                                {
-                                    "type": "object",
-                                    "properties": {
-                                        "error": {
-                                            "$ref": "#/definitions/types.APIError"
-                                        }
-                                    }
-                                }
-                            ]
-                        }
-                    },
-                    "404": {
-                        "description": "timelock合约不存在",
-                        "schema": {
-                            "allOf": [
-                                {
-                                    "$ref": "#/definitions/types.APIResponse"
-                                },
-                                {
-                                    "type": "object",
-                                    "properties": {
-                                        "error": {
-                                            "$ref": "#/definitions/types.APIError"
-                                        }
-                                    }
-                                }
-                            ]
-                        }
-                    },
-                    "500": {
-                        "description": "服务器内部错误",
-                        "schema": {
-                            "allOf": [
-                                {
-                                    "$ref": "#/definitions/types.APIResponse"
-                                },
-                                {
-                                    "type": "object",
-                                    "properties": {
-                                        "error": {
-                                            "$ref": "#/definitions/types.APIError"
-                                        }
-                                    }
-                                }
-                            ]
-                        }
-                    }
-                }
-            }
-        },
-        "/api/v1/timelock/import": {
-            "post": {
-                "security": [
-                    {
-                        "BearerAuth": []
-                    }
-                ],
-                "description": "导入已在区块链上部署的timelock合约。前端需要从区块链读取合约的创建参数(Compound标准需要提供admin, pendingAdmin有则传入, 没有则传空; OpenZeppelin标准需要提供proposers, executors, cancellers, admin需要为全0地址, proposers就是cancellers)并提供给后端，或者用户自己提供，用于精细化权限管理。",
-                "consumes": [
-                    "application/json"
-                ],
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "Timelock"
-                ],
-                "summary": "导入已存在的timelock合约",
-                "parameters": [
-                    {
-                        "description": "导入timelock合约的请求体",
-                        "name": "request",
-                        "in": "body",
-                        "required": true,
-                        "schema": {
-                            "$ref": "#/definitions/types.ImportTimeLockRequest"
-                        }
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "成功导入timelock合约",
-                        "schema": {
-                            "allOf": [
-                                {
-                                    "$ref": "#/definitions/types.APIResponse"
-                                },
-                                {
-                                    "type": "object",
-                                    "properties": {
-                                        "data": {
-                                            "type": "object"
-                                        }
-                                    }
-                                }
-                            ]
-                        }
-                    },
-                    "400": {
-                        "description": "请求参数错误",
-                        "schema": {
-                            "allOf": [
-                                {
-                                    "$ref": "#/definitions/types.APIResponse"
-                                },
-                                {
-                                    "type": "object",
-                                    "properties": {
-                                        "error": {
-                                            "$ref": "#/definitions/types.APIError"
-                                        }
-                                    }
-                                }
-                            ]
-                        }
-                    },
-                    "401": {
-                        "description": "未认证或令牌无效",
-                        "schema": {
-                            "allOf": [
-                                {
-                                    "$ref": "#/definitions/types.APIResponse"
-                                },
-                                {
-                                    "type": "object",
-                                    "properties": {
-                                        "error": {
-                                            "$ref": "#/definitions/types.APIError"
-                                        }
-                                    }
-                                }
-                            ]
-                        }
-                    },
-                    "409": {
-                        "description": "timelock合约已存在",
-                        "schema": {
-                            "allOf": [
-                                {
-                                    "$ref": "#/definitions/types.APIResponse"
-                                },
-                                {
-                                    "type": "object",
-                                    "properties": {
-                                        "error": {
-                                            "$ref": "#/definitions/types.APIError"
-                                        }
-                                    }
-                                }
-                            ]
-                        }
-                    },
-                    "500": {
-                        "description": "服务器内部错误",
-                        "schema": {
-                            "allOf": [
-                                {
-                                    "$ref": "#/definitions/types.APIResponse"
-                                },
-                                {
-                                    "type": "object",
-                                    "properties": {
-                                        "error": {
-                                            "$ref": "#/definitions/types.APIError"
-                                        }
-                                    }
-                                }
-                            ]
-                        }
-                    }
-                }
-            }
-        },
-        "/api/v1/timelock/list": {
-            "get": {
-                "security": [
-                    {
-                        "BearerAuth": []
-                    }
-                ],
-                "description": "获取当前用户在所有链上有权限访问的timelock合约列表。支持按合约标准和状态进行筛选。返回的列表根据用户权限进行精细控制，只显示用户作为创建者、管理员、提议者、执行者或取消者的合约。前端自行实现分页功能。",
-                "consumes": [
-                    "application/json"
-                ],
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "Timelock"
-                ],
-                "summary": "获取用户timelock合约列表（按权限筛选，所有链）",
-                "parameters": [
-                    {
-                        "enum": [
-                            "compound",
-                            "openzeppelin"
-                        ],
-                        "type": "string",
-                        "example": "openzeppelin",
-                        "description": "按合约标准筛选",
-                        "name": "standard",
-                        "in": "query"
-                    },
-                    {
-                        "enum": [
-                            "active",
-                            "inactive"
-                        ],
-                        "type": "string",
-                        "example": "active",
-                        "description": "按状态筛选",
-                        "name": "status",
-                        "in": "query"
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "成功获取timelock合约列表",
-                        "schema": {
-                            "allOf": [
-                                {
-                                    "$ref": "#/definitions/types.APIResponse"
-                                },
-                                {
-                                    "type": "object",
-                                    "properties": {
-                                        "data": {
-                                            "$ref": "#/definitions/types.GetTimeLockListResponse"
-                                        }
-                                    }
-                                }
-                            ]
-                        }
-                    },
-                    "400": {
-                        "description": "请求参数错误",
-                        "schema": {
-                            "allOf": [
-                                {
-                                    "$ref": "#/definitions/types.APIResponse"
-                                },
-                                {
-                                    "type": "object",
-                                    "properties": {
-                                        "error": {
-                                            "$ref": "#/definitions/types.APIError"
-                                        }
-                                    }
-                                }
-                            ]
-                        }
-                    },
-                    "401": {
-                        "description": "未认证或令牌无效",
-                        "schema": {
-                            "allOf": [
-                                {
-                                    "$ref": "#/definitions/types.APIResponse"
-                                },
-                                {
-                                    "type": "object",
-                                    "properties": {
-                                        "error": {
-                                            "$ref": "#/definitions/types.APIError"
-                                        }
-                                    }
-                                }
-                            ]
-                        }
-                    },
-                    "500": {
-                        "description": "服务器内部错误",
-                        "schema": {
-                            "allOf": [
-                                {
-                                    "$ref": "#/definitions/types.APIResponse"
-                                },
-                                {
-                                    "type": "object",
-                                    "properties": {
-                                        "error": {
-                                            "$ref": "#/definitions/types.APIError"
-                                        }
-                                    }
-                                }
-                            ]
-                        }
-                    }
-                }
-            }
-        },
-        "/api/v1/timelock/{standard}/{id}": {
-            "put": {
-                "security": [
-                    {
-                        "BearerAuth": []
-                    }
-                ],
-                "description": "更新指定timelock合约的备注信息。只有合约的创建者/导入者才能更新备注。备注信息用于帮助用户管理和识别不同的timelock合约。",
-                "consumes": [
-                    "application/json"
-                ],
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "Timelock"
-                ],
-                "summary": "更新timelock合约备注",
-                "parameters": [
-                    {
-                        "enum": [
-                            "compound",
-                            "openzeppelin"
-                        ],
-                        "type": "string",
-                        "example": "compound",
-                        "description": "合约标准",
-                        "name": "standard",
-                        "in": "path",
-                        "required": true
-                    },
-                    {
-                        "type": "integer",
-                        "example": 1,
-                        "description": "Timelock合约的数据库ID",
-                        "name": "id",
-                        "in": "path",
-                        "required": true
-                    },
-                    {
-                        "description": "更新请求体",
-                        "name": "request",
-                        "in": "body",
-                        "required": true,
-                        "schema": {
-                            "$ref": "#/definitions/types.UpdateTimeLockRequest"
-                        }
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "成功更新timelock合约备注",
-                        "schema": {
-                            "allOf": [
-                                {
-                                    "$ref": "#/definitions/types.APIResponse"
-                                },
-                                {
-                                    "type": "object",
-                                    "properties": {
-                                        "data": {
-                                            "type": "object"
-                                        }
-                                    }
-                                }
-                            ]
-                        }
-                    },
-                    "400": {
-                        "description": "请求参数错误",
-                        "schema": {
-                            "allOf": [
-                                {
-                                    "$ref": "#/definitions/types.APIResponse"
-                                },
-                                {
-                                    "type": "object",
-                                    "properties": {
-                                        "error": {
-                                            "$ref": "#/definitions/types.APIError"
-                                        }
-                                    }
-                                }
-                            ]
-                        }
-                    },
-                    "401": {
-                        "description": "未认证或令牌无效",
-                        "schema": {
-                            "allOf": [
-                                {
-                                    "$ref": "#/definitions/types.APIResponse"
-                                },
-                                {
-                                    "type": "object",
-                                    "properties": {
-                                        "error": {
-                                            "$ref": "#/definitions/types.APIError"
-                                        }
-                                    }
-                                }
-                            ]
-                        }
-                    },
-                    "403": {
-                        "description": "无权访问此timelock合约",
-                        "schema": {
-                            "allOf": [
-                                {
-                                    "$ref": "#/definitions/types.APIResponse"
-                                },
-                                {
-                                    "type": "object",
-                                    "properties": {
-                                        "error": {
-                                            "$ref": "#/definitions/types.APIError"
-                                        }
-                                    }
-                                }
-                            ]
-                        }
-                    },
-                    "404": {
-                        "description": "timelock合约不存在",
-                        "schema": {
-                            "allOf": [
-                                {
-                                    "$ref": "#/definitions/types.APIResponse"
-                                },
-                                {
-                                    "type": "object",
-                                    "properties": {
-                                        "error": {
-                                            "$ref": "#/definitions/types.APIError"
-                                        }
-                                    }
-                                }
-                            ]
-                        }
-                    },
-                    "500": {
-                        "description": "服务器内部错误",
-                        "schema": {
-                            "allOf": [
-                                {
-                                    "$ref": "#/definitions/types.APIResponse"
-                                },
-                                {
-                                    "type": "object",
-                                    "properties": {
-                                        "error": {
-                                            "$ref": "#/definitions/types.APIError"
-                                        }
-                                    }
-                                }
-                            ]
-                        }
-                    }
-                }
-            },
+        "/api/v1/timelock/delete": {
             "delete": {
                 "security": [
                     {
@@ -4383,24 +3466,13 @@ const docTemplate = `{
                 "summary": "删除timelock合约记录",
                 "parameters": [
                     {
-                        "enum": [
-                            "compound",
-                            "openzeppelin"
-                        ],
-                        "type": "string",
-                        "example": "compound",
-                        "description": "合约标准",
-                        "name": "standard",
-                        "in": "path",
-                        "required": true
-                    },
-                    {
-                        "type": "integer",
-                        "example": 1,
-                        "description": "Timelock合约的数据库ID",
-                        "name": "id",
-                        "in": "path",
-                        "required": true
+                        "description": "删除请求体",
+                        "name": "request",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/types.DeleteTimeLockRequest"
+                        }
                     }
                 ],
                 "responses": {
@@ -4515,14 +3587,14 @@ const docTemplate = `{
                 }
             }
         },
-        "/api/v1/transaction/create": {
+        "/api/v1/timelock/detail": {
             "post": {
                 "security": [
                     {
                         "BearerAuth": []
                     }
                 ],
-                "description": "创建新的timelock交易记录。前端发起交易后，需要提供chainid、timelock合约地址、timelock标准、txhash、txData、eta等信息。系统会验证用户权限（compound的admin，openzeppelin的proposer）后创建记录。",
+                "description": "获取指定timelock合约的完整详细信息，包括合约的基本信息、治理参数以及用户权限信息。只有具有相应权限的用户才能查看详细信息。",
                 "consumes": [
                     "application/json"
                 ],
@@ -4530,23 +3602,23 @@ const docTemplate = `{
                     "application/json"
                 ],
                 "tags": [
-                    "Transaction"
+                    "Timelock"
                 ],
-                "summary": "创建交易记录",
+                "summary": "获取timelock合约详细信息",
                 "parameters": [
                     {
-                        "description": "创建交易的请求体",
+                        "description": "获取详情的请求体",
                         "name": "request",
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/types.CreateTransactionRequest"
+                            "$ref": "#/definitions/types.GetTimeLockDetailRequest"
                         }
                     }
                 ],
                 "responses": {
                     "200": {
-                        "description": "成功创建交易记录",
+                        "description": "成功获取timelock合约详情",
                         "schema": {
                             "allOf": [
                                 {
@@ -4556,7 +3628,7 @@ const docTemplate = `{
                                     "type": "object",
                                     "properties": {
                                         "data": {
-                                            "$ref": "#/definitions/types.TransactionWithPermission"
+                                            "$ref": "#/definitions/types.GetTimeLockDetailResponse"
                                         }
                                     }
                                 }
@@ -4600,7 +3672,7 @@ const docTemplate = `{
                         }
                     },
                     "403": {
-                        "description": "权限不足",
+                        "description": "无权访问此timelock合约",
                         "schema": {
                             "allOf": [
                                 {
@@ -4617,8 +3689,8 @@ const docTemplate = `{
                             ]
                         }
                     },
-                    "409": {
-                        "description": "交易已存在",
+                    "404": {
+                        "description": "timelock合约不存在",
                         "schema": {
                             "allOf": [
                                 {
@@ -4656,14 +3728,14 @@ const docTemplate = `{
                 }
             }
         },
-        "/api/v1/transaction/list": {
+        "/api/v1/timelock/list": {
             "get": {
                 "security": [
                     {
                         "BearerAuth": []
                     }
                 ],
-                "description": "获取当前用户的交易列表，支持按链ID、timelock地址、标准和状态进行筛选。返回带权限信息的交易列表，包括用户可执行和可取消的操作。",
+                "description": "获取当前用户在所有链上有权限访问的timelock合约列表。支持按合约标准和状态进行筛选。返回的列表根据用户权限进行精细控制，只显示用户作为创建者、管理员、提议者、执行者的合约。",
                 "consumes": [
                     "application/json"
                 ],
@@ -4671,23 +3743,17 @@ const docTemplate = `{
                     "application/json"
                 ],
                 "tags": [
-                    "Transaction"
+                    "Timelock"
                 ],
-                "summary": "获取用户交易列表",
+                "summary": "获取用户timelock合约列表（按权限筛选，所有链）",
                 "parameters": [
                     {
-                        "type": "integer",
-                        "example": 1,
-                        "description": "按链ID筛选",
-                        "name": "chain_id",
-                        "in": "query"
-                    },
-                    {
                         "type": "string",
-                        "example": "0x1234567890123456789012345678901234567890",
-                        "description": "按timelock地址筛选",
-                        "name": "timelock_address",
-                        "in": "query"
+                        "example": "0x...",
+                        "description": "用户地址",
+                        "name": "user_address",
+                        "in": "query",
+                        "required": true
                     },
                     {
                         "enum": [
@@ -4695,48 +3761,26 @@ const docTemplate = `{
                             "openzeppelin"
                         ],
                         "type": "string",
-                        "example": "compound",
-                        "description": "按timelock标准筛选",
-                        "name": "timelock_standard",
+                        "example": "openzeppelin",
+                        "description": "按合约标准筛选",
+                        "name": "standard",
                         "in": "query"
                     },
                     {
                         "enum": [
-                            "queued",
-                            "ready",
-                            "executed",
-                            "expired",
-                            "canceled"
+                            "active",
+                            "inactive"
                         ],
                         "type": "string",
-                        "example": "queued",
+                        "example": "active",
                         "description": "按状态筛选",
                         "name": "status",
                         "in": "query"
-                    },
-                    {
-                        "minimum": 1,
-                        "type": "integer",
-                        "example": 1,
-                        "description": "页码",
-                        "name": "page",
-                        "in": "query",
-                        "required": true
-                    },
-                    {
-                        "maximum": 100,
-                        "minimum": 1,
-                        "type": "integer",
-                        "example": 20,
-                        "description": "每页大小",
-                        "name": "page_size",
-                        "in": "query",
-                        "required": true
                     }
                 ],
                 "responses": {
                     "200": {
-                        "description": "成功获取交易列表",
+                        "description": "成功获取timelock合约列表",
                         "schema": {
                             "allOf": [
                                 {
@@ -4746,7 +3790,7 @@ const docTemplate = `{
                                     "type": "object",
                                     "properties": {
                                         "data": {
-                                            "$ref": "#/definitions/types.GetTransactionListResponse"
+                                            "$ref": "#/definitions/types.GetTimeLockListResponse"
                                         }
                                     }
                                 }
@@ -4810,359 +3854,14 @@ const docTemplate = `{
                 }
             }
         },
-        "/api/v1/transaction/pending": {
-            "get": {
-                "security": [
-                    {
-                        "BearerAuth": []
-                    }
-                ],
-                "description": "获取状态为queued、ready、executing或failed的交易列表，可选择只显示当前用户可执行的交易。包含失败后可重试的交易。这是交易执行界面使用的主要接口，按ETA排序显示最紧急的交易。",
-                "consumes": [
-                    "application/json"
-                ],
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "Transaction"
-                ],
-                "summary": "获取待处理交易列表",
-                "parameters": [
-                    {
-                        "type": "integer",
-                        "example": 1,
-                        "description": "按链ID筛选",
-                        "name": "chain_id",
-                        "in": "query"
-                    },
-                    {
-                        "type": "boolean",
-                        "example": false,
-                        "description": "只显示当前用户可执行的交易",
-                        "name": "only_can_exec",
-                        "in": "query"
-                    },
-                    {
-                        "minimum": 1,
-                        "type": "integer",
-                        "example": 1,
-                        "description": "页码",
-                        "name": "page",
-                        "in": "query",
-                        "required": true
-                    },
-                    {
-                        "maximum": 100,
-                        "minimum": 1,
-                        "type": "integer",
-                        "example": 20,
-                        "description": "每页大小",
-                        "name": "page_size",
-                        "in": "query",
-                        "required": true
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "成功获取待处理交易列表",
-                        "schema": {
-                            "allOf": [
-                                {
-                                    "$ref": "#/definitions/types.APIResponse"
-                                },
-                                {
-                                    "type": "object",
-                                    "properties": {
-                                        "data": {
-                                            "$ref": "#/definitions/types.GetTransactionListResponse"
-                                        }
-                                    }
-                                }
-                            ]
-                        }
-                    },
-                    "400": {
-                        "description": "请求参数错误",
-                        "schema": {
-                            "allOf": [
-                                {
-                                    "$ref": "#/definitions/types.APIResponse"
-                                },
-                                {
-                                    "type": "object",
-                                    "properties": {
-                                        "error": {
-                                            "$ref": "#/definitions/types.APIError"
-                                        }
-                                    }
-                                }
-                            ]
-                        }
-                    },
-                    "401": {
-                        "description": "未认证或令牌无效",
-                        "schema": {
-                            "allOf": [
-                                {
-                                    "$ref": "#/definitions/types.APIResponse"
-                                },
-                                {
-                                    "type": "object",
-                                    "properties": {
-                                        "error": {
-                                            "$ref": "#/definitions/types.APIError"
-                                        }
-                                    }
-                                }
-                            ]
-                        }
-                    },
-                    "500": {
-                        "description": "服务器内部错误",
-                        "schema": {
-                            "allOf": [
-                                {
-                                    "$ref": "#/definitions/types.APIResponse"
-                                },
-                                {
-                                    "type": "object",
-                                    "properties": {
-                                        "error": {
-                                            "$ref": "#/definitions/types.APIError"
-                                        }
-                                    }
-                                }
-                            ]
-                        }
-                    }
-                }
-            }
-        },
-        "/api/v1/transaction/stats": {
-            "get": {
-                "security": [
-                    {
-                        "BearerAuth": []
-                    }
-                ],
-                "description": "获取当前用户的交易统计信息，包括总交易数和各状态的交易数量。用于仪表板显示。",
-                "consumes": [
-                    "application/json"
-                ],
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "Transaction"
-                ],
-                "summary": "获取交易统计信息",
-                "responses": {
-                    "200": {
-                        "description": "成功获取交易统计",
-                        "schema": {
-                            "allOf": [
-                                {
-                                    "$ref": "#/definitions/types.APIResponse"
-                                },
-                                {
-                                    "type": "object",
-                                    "properties": {
-                                        "data": {
-                                            "$ref": "#/definitions/types.TransactionStatsResponse"
-                                        }
-                                    }
-                                }
-                            ]
-                        }
-                    },
-                    "401": {
-                        "description": "未认证或令牌无效",
-                        "schema": {
-                            "allOf": [
-                                {
-                                    "$ref": "#/definitions/types.APIResponse"
-                                },
-                                {
-                                    "type": "object",
-                                    "properties": {
-                                        "error": {
-                                            "$ref": "#/definitions/types.APIError"
-                                        }
-                                    }
-                                }
-                            ]
-                        }
-                    },
-                    "500": {
-                        "description": "服务器内部错误",
-                        "schema": {
-                            "allOf": [
-                                {
-                                    "$ref": "#/definitions/types.APIResponse"
-                                },
-                                {
-                                    "type": "object",
-                                    "properties": {
-                                        "error": {
-                                            "$ref": "#/definitions/types.APIError"
-                                        }
-                                    }
-                                }
-                            ]
-                        }
-                    }
-                }
-            }
-        },
-        "/api/v1/transaction/{id}": {
-            "get": {
-                "security": [
-                    {
-                        "BearerAuth": []
-                    }
-                ],
-                "description": "获取指定交易的完整详细信息，包括交易数据、状态、权限信息以及关联的timelock合约信息。只有有权限的用户才能查看详细信息。",
-                "consumes": [
-                    "application/json"
-                ],
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "Transaction"
-                ],
-                "summary": "获取交易详细信息",
-                "parameters": [
-                    {
-                        "type": "integer",
-                        "example": 1,
-                        "description": "交易ID",
-                        "name": "id",
-                        "in": "path",
-                        "required": true
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "成功获取交易详情",
-                        "schema": {
-                            "allOf": [
-                                {
-                                    "$ref": "#/definitions/types.APIResponse"
-                                },
-                                {
-                                    "type": "object",
-                                    "properties": {
-                                        "data": {
-                                            "$ref": "#/definitions/types.TransactionDetailResponse"
-                                        }
-                                    }
-                                }
-                            ]
-                        }
-                    },
-                    "400": {
-                        "description": "请求参数错误",
-                        "schema": {
-                            "allOf": [
-                                {
-                                    "$ref": "#/definitions/types.APIResponse"
-                                },
-                                {
-                                    "type": "object",
-                                    "properties": {
-                                        "error": {
-                                            "$ref": "#/definitions/types.APIError"
-                                        }
-                                    }
-                                }
-                            ]
-                        }
-                    },
-                    "401": {
-                        "description": "未认证或令牌无效",
-                        "schema": {
-                            "allOf": [
-                                {
-                                    "$ref": "#/definitions/types.APIResponse"
-                                },
-                                {
-                                    "type": "object",
-                                    "properties": {
-                                        "error": {
-                                            "$ref": "#/definitions/types.APIError"
-                                        }
-                                    }
-                                }
-                            ]
-                        }
-                    },
-                    "403": {
-                        "description": "无权访问此交易",
-                        "schema": {
-                            "allOf": [
-                                {
-                                    "$ref": "#/definitions/types.APIResponse"
-                                },
-                                {
-                                    "type": "object",
-                                    "properties": {
-                                        "error": {
-                                            "$ref": "#/definitions/types.APIError"
-                                        }
-                                    }
-                                }
-                            ]
-                        }
-                    },
-                    "404": {
-                        "description": "交易不存在",
-                        "schema": {
-                            "allOf": [
-                                {
-                                    "$ref": "#/definitions/types.APIResponse"
-                                },
-                                {
-                                    "type": "object",
-                                    "properties": {
-                                        "error": {
-                                            "$ref": "#/definitions/types.APIError"
-                                        }
-                                    }
-                                }
-                            ]
-                        }
-                    },
-                    "500": {
-                        "description": "服务器内部错误",
-                        "schema": {
-                            "allOf": [
-                                {
-                                    "$ref": "#/definitions/types.APIResponse"
-                                },
-                                {
-                                    "type": "object",
-                                    "properties": {
-                                        "error": {
-                                            "$ref": "#/definitions/types.APIError"
-                                        }
-                                    }
-                                }
-                            ]
-                        }
-                    }
-                }
-            }
-        },
-        "/api/v1/transaction/{id}/cancel": {
+        "/api/v1/timelock/refresh-permissions": {
             "post": {
                 "security": [
                     {
                         "BearerAuth": []
                     }
                 ],
-                "description": "取消处于queued或ready状态的timelock交易。需要验证用户权限（compound的admin，openzeppelin的canceller或创建者）。取消成功后更新交易状态。",
+                "description": "刷新该用户在库中所有timelock合约的权限，将合约中所有角色获取一遍然后更新数据库。这个操作会从区块链上重新读取用户在各个timelock合约中的最新权限信息。",
                 "consumes": [
                     "application/json"
                 ],
@@ -5170,22 +3869,128 @@ const docTemplate = `{
                     "application/json"
                 ],
                 "tags": [
-                    "Transaction"
+                    "Timelock"
                 ],
-                "summary": "取消timelock交易",
+                "summary": "刷新用户所有timelock合约权限",
                 "parameters": [
                     {
-                        "type": "integer",
-                        "example": 1,
-                        "description": "交易ID",
-                        "name": "id",
-                        "in": "path",
-                        "required": true
+                        "description": "刷新权限的请求体",
+                        "name": "request",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/types.TimeLockPermissionRefreshRequest"
+                        }
                     }
                 ],
                 "responses": {
                     "200": {
-                        "description": "成功取消交易",
+                        "description": "成功刷新权限",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/types.APIResponse"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "type": "object"
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    },
+                    "400": {
+                        "description": "请求参数错误",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/types.APIResponse"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "error": {
+                                            "$ref": "#/definitions/types.APIError"
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    },
+                    "401": {
+                        "description": "未认证或令牌无效",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/types.APIResponse"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "error": {
+                                            "$ref": "#/definitions/types.APIError"
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    },
+                    "500": {
+                        "description": "服务器内部错误",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/types.APIResponse"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "error": {
+                                            "$ref": "#/definitions/types.APIError"
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    }
+                }
+            }
+        },
+        "/api/v1/timelock/update": {
+            "put": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "更新指定timelock合约的备注信息。只有合约的创建者/导入者才能更新备注。备注信息用于帮助用户管理和识别不同的timelock合约。",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Timelock"
+                ],
+                "summary": "更新timelock合约备注",
+                "parameters": [
+                    {
+                        "description": "更新请求体",
+                        "name": "request",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/types.UpdateTimeLockRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "成功更新timelock合约备注",
                         "schema": {
                             "allOf": [
                                 {
@@ -5239,7 +4044,7 @@ const docTemplate = `{
                         }
                     },
                     "403": {
-                        "description": "权限不足",
+                        "description": "无权访问此timelock合约",
                         "schema": {
                             "allOf": [
                                 {
@@ -5257,657 +4062,7 @@ const docTemplate = `{
                         }
                     },
                     "404": {
-                        "description": "交易不存在",
-                        "schema": {
-                            "allOf": [
-                                {
-                                    "$ref": "#/definitions/types.APIResponse"
-                                },
-                                {
-                                    "type": "object",
-                                    "properties": {
-                                        "error": {
-                                            "$ref": "#/definitions/types.APIError"
-                                        }
-                                    }
-                                }
-                            ]
-                        }
-                    },
-                    "409": {
-                        "description": "交易状态不允许取消",
-                        "schema": {
-                            "allOf": [
-                                {
-                                    "$ref": "#/definitions/types.APIResponse"
-                                },
-                                {
-                                    "type": "object",
-                                    "properties": {
-                                        "error": {
-                                            "$ref": "#/definitions/types.APIError"
-                                        }
-                                    }
-                                }
-                            ]
-                        }
-                    },
-                    "500": {
-                        "description": "服务器内部错误",
-                        "schema": {
-                            "allOf": [
-                                {
-                                    "$ref": "#/definitions/types.APIResponse"
-                                },
-                                {
-                                    "type": "object",
-                                    "properties": {
-                                        "error": {
-                                            "$ref": "#/definitions/types.APIError"
-                                        }
-                                    }
-                                }
-                            ]
-                        }
-                    }
-                }
-            }
-        },
-        "/api/v1/transaction/{id}/execute": {
-            "post": {
-                "security": [
-                    {
-                        "BearerAuth": []
-                    }
-                ],
-                "description": "执行已就绪的timelock交易或重试失败的交易。支持ready状态（ETA已到达）和failed状态（执行失败后重试）的交易。需要验证用户权限（compound的admin，openzeppelin的executor）。执行成功后更新交易状态。",
-                "consumes": [
-                    "application/json"
-                ],
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "Transaction"
-                ],
-                "summary": "执行已就绪的timelock交易",
-                "parameters": [
-                    {
-                        "type": "integer",
-                        "example": 1,
-                        "description": "交易ID",
-                        "name": "id",
-                        "in": "path",
-                        "required": true
-                    },
-                    {
-                        "description": "执行交易的请求体",
-                        "name": "request",
-                        "in": "body",
-                        "required": true,
-                        "schema": {
-                            "$ref": "#/definitions/types.ExecuteTransactionRequest"
-                        }
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "成功执行交易",
-                        "schema": {
-                            "allOf": [
-                                {
-                                    "$ref": "#/definitions/types.APIResponse"
-                                },
-                                {
-                                    "type": "object",
-                                    "properties": {
-                                        "data": {
-                                            "type": "object"
-                                        }
-                                    }
-                                }
-                            ]
-                        }
-                    },
-                    "400": {
-                        "description": "请求参数错误",
-                        "schema": {
-                            "allOf": [
-                                {
-                                    "$ref": "#/definitions/types.APIResponse"
-                                },
-                                {
-                                    "type": "object",
-                                    "properties": {
-                                        "error": {
-                                            "$ref": "#/definitions/types.APIError"
-                                        }
-                                    }
-                                }
-                            ]
-                        }
-                    },
-                    "401": {
-                        "description": "未认证或令牌无效",
-                        "schema": {
-                            "allOf": [
-                                {
-                                    "$ref": "#/definitions/types.APIResponse"
-                                },
-                                {
-                                    "type": "object",
-                                    "properties": {
-                                        "error": {
-                                            "$ref": "#/definitions/types.APIError"
-                                        }
-                                    }
-                                }
-                            ]
-                        }
-                    },
-                    "403": {
-                        "description": "权限不足",
-                        "schema": {
-                            "allOf": [
-                                {
-                                    "$ref": "#/definitions/types.APIResponse"
-                                },
-                                {
-                                    "type": "object",
-                                    "properties": {
-                                        "error": {
-                                            "$ref": "#/definitions/types.APIError"
-                                        }
-                                    }
-                                }
-                            ]
-                        }
-                    },
-                    "404": {
-                        "description": "交易不存在",
-                        "schema": {
-                            "allOf": [
-                                {
-                                    "$ref": "#/definitions/types.APIResponse"
-                                },
-                                {
-                                    "type": "object",
-                                    "properties": {
-                                        "error": {
-                                            "$ref": "#/definitions/types.APIError"
-                                        }
-                                    }
-                                }
-                            ]
-                        }
-                    },
-                    "409": {
-                        "description": "交易状态不允许执行",
-                        "schema": {
-                            "allOf": [
-                                {
-                                    "$ref": "#/definitions/types.APIResponse"
-                                },
-                                {
-                                    "type": "object",
-                                    "properties": {
-                                        "error": {
-                                            "$ref": "#/definitions/types.APIError"
-                                        }
-                                    }
-                                }
-                            ]
-                        }
-                    },
-                    "500": {
-                        "description": "服务器内部错误",
-                        "schema": {
-                            "allOf": [
-                                {
-                                    "$ref": "#/definitions/types.APIResponse"
-                                },
-                                {
-                                    "type": "object",
-                                    "properties": {
-                                        "error": {
-                                            "$ref": "#/definitions/types.APIError"
-                                        }
-                                    }
-                                }
-                            ]
-                        }
-                    }
-                }
-            }
-        },
-        "/api/v1/transaction/{id}/mark-failed": {
-            "post": {
-                "security": [
-                    {
-                        "BearerAuth": []
-                    }
-                ],
-                "description": "将执行中的交易标记为失败状态。这个接口通常由前端在区块链执行失败时调用，或者由后端监控程序调用。只能标记状态为executing的交易。",
-                "consumes": [
-                    "application/json"
-                ],
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "Transaction"
-                ],
-                "summary": "标记交易执行失败",
-                "parameters": [
-                    {
-                        "type": "integer",
-                        "example": 1,
-                        "description": "交易ID",
-                        "name": "id",
-                        "in": "path",
-                        "required": true
-                    },
-                    {
-                        "description": "标记失败的请求体",
-                        "name": "request",
-                        "in": "body",
-                        "required": true,
-                        "schema": {
-                            "$ref": "#/definitions/types.MarkTransactionFailedRequest"
-                        }
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "成功标记交易失败",
-                        "schema": {
-                            "allOf": [
-                                {
-                                    "$ref": "#/definitions/types.APIResponse"
-                                },
-                                {
-                                    "type": "object",
-                                    "properties": {
-                                        "data": {
-                                            "type": "object"
-                                        }
-                                    }
-                                }
-                            ]
-                        }
-                    },
-                    "400": {
-                        "description": "请求参数错误",
-                        "schema": {
-                            "allOf": [
-                                {
-                                    "$ref": "#/definitions/types.APIResponse"
-                                },
-                                {
-                                    "type": "object",
-                                    "properties": {
-                                        "error": {
-                                            "$ref": "#/definitions/types.APIError"
-                                        }
-                                    }
-                                }
-                            ]
-                        }
-                    },
-                    "401": {
-                        "description": "未认证或令牌无效",
-                        "schema": {
-                            "allOf": [
-                                {
-                                    "$ref": "#/definitions/types.APIResponse"
-                                },
-                                {
-                                    "type": "object",
-                                    "properties": {
-                                        "error": {
-                                            "$ref": "#/definitions/types.APIError"
-                                        }
-                                    }
-                                }
-                            ]
-                        }
-                    },
-                    "404": {
-                        "description": "交易不存在",
-                        "schema": {
-                            "allOf": [
-                                {
-                                    "$ref": "#/definitions/types.APIResponse"
-                                },
-                                {
-                                    "type": "object",
-                                    "properties": {
-                                        "error": {
-                                            "$ref": "#/definitions/types.APIError"
-                                        }
-                                    }
-                                }
-                            ]
-                        }
-                    },
-                    "409": {
-                        "description": "交易状态不允许标记失败",
-                        "schema": {
-                            "allOf": [
-                                {
-                                    "$ref": "#/definitions/types.APIResponse"
-                                },
-                                {
-                                    "type": "object",
-                                    "properties": {
-                                        "error": {
-                                            "$ref": "#/definitions/types.APIError"
-                                        }
-                                    }
-                                }
-                            ]
-                        }
-                    },
-                    "500": {
-                        "description": "服务器内部错误",
-                        "schema": {
-                            "allOf": [
-                                {
-                                    "$ref": "#/definitions/types.APIResponse"
-                                },
-                                {
-                                    "type": "object",
-                                    "properties": {
-                                        "error": {
-                                            "$ref": "#/definitions/types.APIError"
-                                        }
-                                    }
-                                }
-                            ]
-                        }
-                    }
-                }
-            }
-        },
-        "/api/v1/transaction/{id}/mark-submit-failed": {
-            "post": {
-                "security": [
-                    {
-                        "BearerAuth": []
-                    }
-                ],
-                "description": "将正在提交的交易标记为提交失败状态。这个接口通常由前端在提交到timelock合约失败时调用。只能标记状态为submitting的交易。",
-                "consumes": [
-                    "application/json"
-                ],
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "Transaction"
-                ],
-                "summary": "标记交易提交失败",
-                "parameters": [
-                    {
-                        "type": "integer",
-                        "example": 1,
-                        "description": "交易ID",
-                        "name": "id",
-                        "in": "path",
-                        "required": true
-                    },
-                    {
-                        "description": "标记提交失败的请求体",
-                        "name": "request",
-                        "in": "body",
-                        "required": true,
-                        "schema": {
-                            "$ref": "#/definitions/types.MarkTransactionSubmitFailedRequest"
-                        }
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "成功标记交易提交失败",
-                        "schema": {
-                            "allOf": [
-                                {
-                                    "$ref": "#/definitions/types.APIResponse"
-                                },
-                                {
-                                    "type": "object",
-                                    "properties": {
-                                        "data": {
-                                            "type": "object"
-                                        }
-                                    }
-                                }
-                            ]
-                        }
-                    },
-                    "400": {
-                        "description": "请求参数错误",
-                        "schema": {
-                            "allOf": [
-                                {
-                                    "$ref": "#/definitions/types.APIResponse"
-                                },
-                                {
-                                    "type": "object",
-                                    "properties": {
-                                        "error": {
-                                            "$ref": "#/definitions/types.APIError"
-                                        }
-                                    }
-                                }
-                            ]
-                        }
-                    },
-                    "401": {
-                        "description": "未认证或令牌无效",
-                        "schema": {
-                            "allOf": [
-                                {
-                                    "$ref": "#/definitions/types.APIResponse"
-                                },
-                                {
-                                    "type": "object",
-                                    "properties": {
-                                        "error": {
-                                            "$ref": "#/definitions/types.APIError"
-                                        }
-                                    }
-                                }
-                            ]
-                        }
-                    },
-                    "404": {
-                        "description": "交易不存在",
-                        "schema": {
-                            "allOf": [
-                                {
-                                    "$ref": "#/definitions/types.APIResponse"
-                                },
-                                {
-                                    "type": "object",
-                                    "properties": {
-                                        "error": {
-                                            "$ref": "#/definitions/types.APIError"
-                                        }
-                                    }
-                                }
-                            ]
-                        }
-                    },
-                    "409": {
-                        "description": "交易状态不允许标记提交失败",
-                        "schema": {
-                            "allOf": [
-                                {
-                                    "$ref": "#/definitions/types.APIResponse"
-                                },
-                                {
-                                    "type": "object",
-                                    "properties": {
-                                        "error": {
-                                            "$ref": "#/definitions/types.APIError"
-                                        }
-                                    }
-                                }
-                            ]
-                        }
-                    },
-                    "500": {
-                        "description": "服务器内部错误",
-                        "schema": {
-                            "allOf": [
-                                {
-                                    "$ref": "#/definitions/types.APIResponse"
-                                },
-                                {
-                                    "type": "object",
-                                    "properties": {
-                                        "error": {
-                                            "$ref": "#/definitions/types.APIError"
-                                        }
-                                    }
-                                }
-                            ]
-                        }
-                    }
-                }
-            }
-        },
-        "/api/v1/transaction/{id}/retry-submit": {
-            "post": {
-                "security": [
-                    {
-                        "BearerAuth": []
-                    }
-                ],
-                "description": "重试提交失败的交易。用于submit_failed状态的交易，允许用户使用新的交易哈希重新提交。需要验证用户权限（创建者或有提议权限的用户）。",
-                "consumes": [
-                    "application/json"
-                ],
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "Transaction"
-                ],
-                "summary": "重试提交交易",
-                "parameters": [
-                    {
-                        "type": "integer",
-                        "example": 1,
-                        "description": "交易ID",
-                        "name": "id",
-                        "in": "path",
-                        "required": true
-                    },
-                    {
-                        "description": "重试提交的请求体",
-                        "name": "request",
-                        "in": "body",
-                        "required": true,
-                        "schema": {
-                            "$ref": "#/definitions/types.RetrySubmitTransactionRequest"
-                        }
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "成功重试提交交易",
-                        "schema": {
-                            "allOf": [
-                                {
-                                    "$ref": "#/definitions/types.APIResponse"
-                                },
-                                {
-                                    "type": "object",
-                                    "properties": {
-                                        "data": {
-                                            "type": "object"
-                                        }
-                                    }
-                                }
-                            ]
-                        }
-                    },
-                    "400": {
-                        "description": "请求参数错误",
-                        "schema": {
-                            "allOf": [
-                                {
-                                    "$ref": "#/definitions/types.APIResponse"
-                                },
-                                {
-                                    "type": "object",
-                                    "properties": {
-                                        "error": {
-                                            "$ref": "#/definitions/types.APIError"
-                                        }
-                                    }
-                                }
-                            ]
-                        }
-                    },
-                    "401": {
-                        "description": "未认证或令牌无效",
-                        "schema": {
-                            "allOf": [
-                                {
-                                    "$ref": "#/definitions/types.APIResponse"
-                                },
-                                {
-                                    "type": "object",
-                                    "properties": {
-                                        "error": {
-                                            "$ref": "#/definitions/types.APIError"
-                                        }
-                                    }
-                                }
-                            ]
-                        }
-                    },
-                    "403": {
-                        "description": "权限不足",
-                        "schema": {
-                            "allOf": [
-                                {
-                                    "$ref": "#/definitions/types.APIResponse"
-                                },
-                                {
-                                    "type": "object",
-                                    "properties": {
-                                        "error": {
-                                            "$ref": "#/definitions/types.APIError"
-                                        }
-                                    }
-                                }
-                            ]
-                        }
-                    },
-                    "404": {
-                        "description": "交易不存在",
-                        "schema": {
-                            "allOf": [
-                                {
-                                    "$ref": "#/definitions/types.APIResponse"
-                                },
-                                {
-                                    "type": "object",
-                                    "properties": {
-                                        "error": {
-                                            "$ref": "#/definitions/types.APIError"
-                                        }
-                                    }
-                                }
-                            ]
-                        }
-                    },
-                    "409": {
-                        "description": "交易状态不允许重试或交易哈希已存在",
+                        "description": "timelock合约不存在",
                         "schema": {
                             "allOf": [
                                 {
@@ -6104,7 +4259,7 @@ const docTemplate = `{
                 }
             }
         },
-        "types.AddEmailNotificationRequest": {
+        "types.AddEmailRequest": {
             "type": "object",
             "required": [
                 "email"
@@ -6113,15 +4268,19 @@ const docTemplate = `{
                 "email": {
                     "type": "string"
                 },
-                "email_remark": {
+                "remark": {
                     "type": "string"
+                }
+            }
+        },
+        "types.AddEmailResponse": {
+            "type": "object",
+            "properties": {
+                "id": {
+                    "type": "integer"
                 },
-                "timelock_contracts": {
-                    "description": "可选，可以为空数组",
-                    "type": "array",
-                    "items": {
-                        "type": "string"
-                    }
+                "message": {
+                    "type": "string"
                 }
             }
         },
@@ -6182,29 +4341,12 @@ const docTemplate = `{
                 }
             }
         },
-        "types.CheckAdminPermissionResponse": {
-            "type": "object",
-            "properties": {
-                "can_accept_admin": {
-                    "type": "boolean"
-                },
-                "can_set_pending_admin": {
-                    "type": "boolean"
-                }
-            }
-        },
         "types.CompoundTimeLockWithPermission": {
             "type": "object",
             "properties": {
                 "admin": {
-                    "description": "管理员地址",
+                    "description": "管理员地址，从链上读取",
                     "type": "string"
-                },
-                "can_accept_admin": {
-                    "type": "boolean"
-                },
-                "can_set_pending_admin": {
-                    "type": "boolean"
                 },
                 "chain_id": {
                     "description": "所在链ID",
@@ -6225,9 +4367,13 @@ const docTemplate = `{
                     "description": "创建者/导入者地址",
                     "type": "string"
                 },
-                "emergency_mode": {
-                    "description": "是否启用应急模式",
-                    "type": "boolean"
+                "delay": {
+                    "description": "延迟时间（秒），从链上读取",
+                    "type": "integer"
+                },
+                "grace_period": {
+                    "description": "宽限期（秒），从链上读取",
+                    "type": "integer"
                 },
                 "id": {
                     "type": "integer"
@@ -6236,12 +4382,16 @@ const docTemplate = `{
                     "description": "是否导入的合约",
                     "type": "boolean"
                 },
-                "min_delay": {
-                    "description": "最小延迟时间（秒）",
+                "maximum_delay": {
+                    "description": "最大延迟时间（秒），从链上读取",
+                    "type": "integer"
+                },
+                "minimum_delay": {
+                    "description": "最小延迟时间（秒），从链上读取",
                     "type": "integer"
                 },
                 "pending_admin": {
-                    "description": "待定管理员地址",
+                    "description": "待定管理员地址，从链上读取",
                     "type": "string"
                 },
                 "remark": {
@@ -6249,15 +4399,7 @@ const docTemplate = `{
                     "type": "string"
                 },
                 "status": {
-                    "description": "状态",
-                    "allOf": [
-                        {
-                            "$ref": "#/definitions/types.TimeLockStatus"
-                        }
-                    ]
-                },
-                "tx_hash": {
-                    "description": "创建交易hash（创建时）",
+                    "description": "状态（active, inactive, deleted）",
                     "type": "string"
                 },
                 "updated_at": {
@@ -6290,6 +4432,41 @@ const docTemplate = `{
                     "type": "string",
                     "maxLength": 200,
                     "minLength": 1
+                }
+            }
+        },
+        "types.CreateOrImportTimelockContractRequest": {
+            "type": "object",
+            "required": [
+                "chain_id",
+                "contract_address",
+                "is_imported",
+                "standard",
+                "user_address"
+            ],
+            "properties": {
+                "chain_id": {
+                    "type": "integer"
+                },
+                "contract_address": {
+                    "type": "string"
+                },
+                "is_imported": {
+                    "type": "boolean"
+                },
+                "remark": {
+                    "type": "string",
+                    "maxLength": 500
+                },
+                "standard": {
+                    "type": "string",
+                    "enum": [
+                        "compound",
+                        "openzeppelin"
+                    ]
+                },
+                "user_address": {
+                    "type": "string"
                 }
             }
         },
@@ -6333,258 +4510,235 @@ const docTemplate = `{
                 }
             }
         },
-        "types.CreateTimeLockRequest": {
+        "types.CreateSubscriptionRequest": {
             "type": "object",
             "required": [
                 "chain_id",
-                "chain_name",
                 "contract_address",
-                "min_delay",
-                "standard",
-                "tx_hash"
+                "notify_on",
+                "timelock_standard",
+                "user_email_id"
             ],
             "properties": {
-                "admin": {
-                    "description": "Compound标准参数",
-                    "type": "string"
-                },
-                "cancellers": {
-                    "description": "OpenZeppelin标准必需",
-                    "type": "array",
-                    "items": {
-                        "type": "string"
-                    }
-                },
                 "chain_id": {
                     "type": "integer"
-                },
-                "chain_name": {
-                    "type": "string"
                 },
                 "contract_address": {
                     "type": "string"
                 },
-                "executors": {
-                    "description": "OpenZeppelin标准必需",
+                "notify_on": {
                     "type": "array",
                     "items": {
                         "type": "string"
                     }
                 },
-                "min_delay": {
-                    "type": "integer",
-                    "minimum": 0
-                },
-                "proposers": {
-                    "description": "OpenZeppelin标准参数",
-                    "type": "array",
-                    "items": {
-                        "type": "string"
-                    }
-                },
-                "remark": {
+                "timelock_standard": {
                     "type": "string",
-                    "maxLength": 500
-                },
-                "standard": {
                     "enum": [
                         "compound",
                         "openzeppelin"
-                    ],
-                    "allOf": [
-                        {
-                            "$ref": "#/definitions/types.TimeLockStandard"
-                        }
                     ]
                 },
-                "tx_hash": {
-                    "type": "string"
+                "user_email_id": {
+                    "type": "integer"
                 }
             }
         },
-        "types.CreateTransactionRequest": {
+        "types.DeleteTimeLockRequest": {
             "type": "object",
             "required": [
                 "chain_id",
-                "chain_name",
-                "eta",
-                "target",
-                "timelock_address",
-                "timelock_standard",
-                "tx_data",
-                "tx_hash"
+                "contract_address",
+                "standard",
+                "user_address"
             ],
             "properties": {
                 "chain_id": {
                     "type": "integer"
                 },
-                "chain_name": {
+                "contract_address": {
                     "type": "string"
                 },
-                "description": {
+                "standard": {
                     "type": "string",
-                    "maxLength": 500
-                },
-                "eta": {
-                    "type": "integer"
-                },
-                "function_sig": {
-                    "type": "string"
-                },
-                "operation_id": {
-                    "description": "OpenZeppelin操作ID",
-                    "type": "string"
-                },
-                "target": {
-                    "type": "string"
-                },
-                "timelock_address": {
-                    "type": "string"
-                },
-                "timelock_standard": {
                     "enum": [
                         "compound",
                         "openzeppelin"
-                    ],
-                    "allOf": [
-                        {
-                            "$ref": "#/definitions/types.TimeLockStandard"
-                        }
                     ]
                 },
-                "tx_data": {
-                    "type": "string"
-                },
-                "tx_hash": {
-                    "type": "string"
-                },
-                "value": {
+                "user_address": {
                     "type": "string"
                 }
             }
         },
-        "types.EmailNotificationListResponse": {
+        "types.EmailListResponse": {
             "type": "object",
             "properties": {
-                "items": {
+                "emails": {
                     "type": "array",
                     "items": {
-                        "$ref": "#/definitions/types.EmailNotificationResponse"
+                        "$ref": "#/definitions/types.UserEmailResponse"
                     }
-                },
-                "page": {
-                    "type": "integer"
-                },
-                "page_size": {
-                    "type": "integer"
                 },
                 "total": {
                     "type": "integer"
-                },
-                "total_pages": {
-                    "type": "integer"
                 }
             }
         },
-        "types.EmailNotificationResponse": {
+        "types.ErrorResponse": {
             "type": "object",
             "properties": {
-                "created_at": {
+                "code": {
                     "type": "string"
                 },
-                "email": {
-                    "type": "string"
-                },
-                "email_remark": {
-                    "type": "string"
-                },
-                "id": {
-                    "type": "integer"
-                },
-                "is_active": {
-                    "type": "boolean"
-                },
-                "is_verified": {
-                    "type": "boolean"
-                },
-                "timelock_contracts": {
-                    "type": "array",
-                    "items": {
-                        "type": "string"
-                    }
-                },
-                "updated_at": {
-                    "type": "string"
-                }
-            }
-        },
-        "types.EmailSendLogResponse": {
-            "type": "object",
-            "properties": {
-                "created_at": {
-                    "type": "string"
-                },
-                "email": {
-                    "type": "string"
-                },
-                "event_type": {
-                    "type": "string"
-                },
-                "id": {
-                    "type": "integer"
-                },
-                "is_emergency": {
-                    "type": "boolean"
-                },
-                "is_replied": {
-                    "type": "boolean"
-                },
-                "replied_at": {
-                    "type": "string"
-                },
-                "send_status": {
-                    "type": "string"
-                },
-                "sent_at": {
-                    "type": "string"
-                },
-                "subject": {
-                    "type": "string"
-                },
-                "timelock_address": {
-                    "type": "string"
-                },
-                "transaction_hash": {
-                    "type": "string"
-                }
-            }
-        },
-        "types.EmergencyReplyResponse": {
-            "type": "object",
-            "properties": {
                 "message": {
                     "type": "string"
-                },
-                "replied_at": {
-                    "type": "string"
-                },
-                "success": {
-                    "type": "boolean"
                 }
             }
         },
-        "types.ExecuteTransactionRequest": {
+        "types.FlowDetailResponse": {
             "type": "object",
-            "required": [
-                "execute_tx_hash",
-                "id"
-            ],
             "properties": {
+                "flow": {
+                    "description": "流程",
+                    "allOf": [
+                        {
+                            "$ref": "#/definitions/types.FlowResponse"
+                        }
+                    ]
+                },
+                "time_to_execution": {
+                    "description": "距离可执行时间的秒数",
+                    "type": "integer"
+                },
+                "time_to_expiration": {
+                    "description": "距离过期时间的秒数（仅Compound）",
+                    "type": "integer"
+                }
+            }
+        },
+        "types.FlowListResponse": {
+            "type": "object",
+            "properties": {
+                "flows": {
+                    "description": "流程列表",
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/types.FlowResponse"
+                    }
+                },
+                "total": {
+                    "description": "总数",
+                    "type": "integer"
+                }
+            }
+        },
+        "types.FlowResponse": {
+            "type": "object",
+            "properties": {
+                "call_data_hex": {
+                    "description": "调用数据",
+                    "type": "string"
+                },
+                "cancel_tx_hash": {
+                    "description": "取消交易哈希",
+                    "type": "string"
+                },
+                "cancelled_at": {
+                    "description": "取消时间",
+                    "type": "string"
+                },
+                "chain_id": {
+                    "description": "链ID",
+                    "type": "integer"
+                },
+                "contract_address": {
+                    "description": "合约地址",
+                    "type": "string"
+                },
+                "created_at": {
+                    "description": "创建时间",
+                    "type": "string"
+                },
+                "eta": {
+                    "description": "执行时间",
+                    "type": "string"
+                },
                 "execute_tx_hash": {
-                    "description": "执行交易的哈希",
+                    "description": "执行交易哈希",
+                    "type": "string"
+                },
+                "executed_at": {
+                    "description": "执行时间",
+                    "type": "string"
+                },
+                "expired_at": {
+                    "description": "过期时间",
+                    "type": "string"
+                },
+                "flow_id": {
+                    "description": "流程ID",
                     "type": "string"
                 },
                 "id": {
+                    "description": "ID",
+                    "type": "integer"
+                },
+                "initiator_address": {
+                    "description": "发起者地址(FromAddress)",
+                    "type": "string"
+                },
+                "queue_tx_hash": {
+                    "description": "排队交易哈希",
+                    "type": "string"
+                },
+                "status": {
+                    "description": "状态",
+                    "type": "string"
+                },
+                "target_address": {
+                    "description": "目标地址",
+                    "type": "string"
+                },
+                "timelock_standard": {
+                    "description": "Timelock标准",
+                    "type": "string"
+                },
+                "updated_at": {
+                    "description": "更新时间",
+                    "type": "string"
+                },
+                "value": {
+                    "description": "价值",
+                    "type": "string"
+                }
+            }
+        },
+        "types.FlowStatsResponse": {
+            "type": "object",
+            "properties": {
+                "cancelled_count": {
+                    "description": "取消中",
+                    "type": "integer"
+                },
+                "executed_count": {
+                    "description": "执行中",
+                    "type": "integer"
+                },
+                "expired_count": {
+                    "description": "过期中",
+                    "type": "integer"
+                },
+                "ready_count": {
+                    "description": "准备中",
+                    "type": "integer"
+                },
+                "total_count": {
+                    "description": "总数",
+                    "type": "integer"
+                },
+                "waiting_count": {
+                    "description": "等待中",
                     "type": "integer"
                 }
             }
@@ -6640,6 +4794,47 @@ const docTemplate = `{
                 }
             }
         },
+        "types.GetTimeLockDetailRequest": {
+            "type": "object",
+            "required": [
+                "chain_id",
+                "contract_address",
+                "standard",
+                "user_address"
+            ],
+            "properties": {
+                "chain_id": {
+                    "type": "integer"
+                },
+                "contract_address": {
+                    "type": "string"
+                },
+                "standard": {
+                    "type": "string",
+                    "enum": [
+                        "compound",
+                        "openzeppelin"
+                    ]
+                },
+                "user_address": {
+                    "type": "string"
+                }
+            }
+        },
+        "types.GetTimeLockDetailResponse": {
+            "type": "object",
+            "properties": {
+                "compound_data": {
+                    "$ref": "#/definitions/types.CompoundTimeLockWithPermission"
+                },
+                "openzeppelin_data": {
+                    "$ref": "#/definitions/types.OpenzeppelinTimeLockWithPermission"
+                },
+                "standard": {
+                    "type": "string"
+                }
+            }
+        },
         "types.GetTimeLockListResponse": {
             "type": "object",
             "properties": {
@@ -6660,130 +4855,6 @@ const docTemplate = `{
                 }
             }
         },
-        "types.GetTransactionListResponse": {
-            "type": "object",
-            "properties": {
-                "page": {
-                    "type": "integer"
-                },
-                "page_size": {
-                    "type": "integer"
-                },
-                "total": {
-                    "type": "integer"
-                },
-                "total_pages": {
-                    "type": "integer"
-                },
-                "transactions": {
-                    "type": "array",
-                    "items": {
-                        "$ref": "#/definitions/types.TransactionWithPermission"
-                    }
-                }
-            }
-        },
-        "types.ImportTimeLockRequest": {
-            "type": "object",
-            "required": [
-                "chain_id",
-                "chain_name",
-                "contract_address",
-                "min_delay",
-                "standard"
-            ],
-            "properties": {
-                "admin": {
-                    "description": "Compound标准参数",
-                    "type": "string"
-                },
-                "cancellers": {
-                    "type": "array",
-                    "items": {
-                        "type": "string"
-                    }
-                },
-                "chain_id": {
-                    "type": "integer"
-                },
-                "chain_name": {
-                    "type": "string"
-                },
-                "contract_address": {
-                    "type": "string"
-                },
-                "executors": {
-                    "type": "array",
-                    "items": {
-                        "type": "string"
-                    }
-                },
-                "min_delay": {
-                    "description": "合约当时创建的参数（从区块链读取）",
-                    "type": "integer",
-                    "minimum": 0
-                },
-                "pending_admin": {
-                    "type": "string"
-                },
-                "proposers": {
-                    "description": "OpenZeppelin标准参数",
-                    "type": "array",
-                    "items": {
-                        "type": "string"
-                    }
-                },
-                "remark": {
-                    "type": "string",
-                    "maxLength": 500
-                },
-                "standard": {
-                    "enum": [
-                        "compound",
-                        "openzeppelin"
-                    ],
-                    "allOf": [
-                        {
-                            "$ref": "#/definitions/types.TimeLockStandard"
-                        }
-                    ]
-                }
-            }
-        },
-        "types.MarkTransactionFailedRequest": {
-            "type": "object",
-            "required": [
-                "id",
-                "reason"
-            ],
-            "properties": {
-                "id": {
-                    "type": "integer"
-                },
-                "reason": {
-                    "description": "失败原因",
-                    "type": "string",
-                    "maxLength": 200
-                }
-            }
-        },
-        "types.MarkTransactionSubmitFailedRequest": {
-            "type": "object",
-            "required": [
-                "id",
-                "reason"
-            ],
-            "properties": {
-                "id": {
-                    "type": "integer"
-                },
-                "reason": {
-                    "description": "提交失败原因",
-                    "type": "string",
-                    "maxLength": 200
-                }
-            }
-        },
         "types.NativeCurrencyConfig": {
             "type": "object",
             "properties": {
@@ -6801,15 +4872,9 @@ const docTemplate = `{
         "types.OpenzeppelinTimeLockWithPermission": {
             "type": "object",
             "properties": {
-                "cancellers": {
-                    "description": "取消者地址列表（JSON）",
+                "admin": {
+                    "description": "管理员地址，从链上读取",
                     "type": "string"
-                },
-                "cancellers_list": {
-                    "type": "array",
-                    "items": {
-                        "type": "string"
-                    }
                 },
                 "chain_id": {
                     "description": "所在链ID",
@@ -6830,19 +4895,13 @@ const docTemplate = `{
                     "description": "创建者/导入者地址",
                     "type": "string"
                 },
-                "emergency_mode": {
-                    "description": "是否启用应急模式",
-                    "type": "boolean"
+                "delay": {
+                    "description": "延迟时间（秒），从链上读取",
+                    "type": "integer"
                 },
                 "executors": {
-                    "description": "执行者地址列表（JSON）",
+                    "description": "执行者地址列表（JSON），从链上读取",
                     "type": "string"
-                },
-                "executors_list": {
-                    "type": "array",
-                    "items": {
-                        "type": "string"
-                    }
                 },
                 "id": {
                     "type": "integer"
@@ -6851,34 +4910,16 @@ const docTemplate = `{
                     "description": "是否导入的合约",
                     "type": "boolean"
                 },
-                "min_delay": {
-                    "description": "最小延迟时间（秒）",
-                    "type": "integer"
-                },
                 "proposers": {
-                    "description": "提议者地址列表（JSON）",
+                    "description": "提议者地址列表（JSON），从链上读取",
                     "type": "string"
-                },
-                "proposers_list": {
-                    "type": "array",
-                    "items": {
-                        "type": "string"
-                    }
                 },
                 "remark": {
                     "description": "备注",
                     "type": "string"
                 },
                 "status": {
-                    "description": "状态",
-                    "allOf": [
-                        {
-                            "$ref": "#/definitions/types.TimeLockStatus"
-                        }
-                    ]
-                },
-                "tx_hash": {
-                    "description": "创建交易hash（创建时）",
+                    "description": "状态（active, inactive, deleted）",
                     "type": "string"
                 },
                 "updated_at": {
@@ -6904,45 +4945,14 @@ const docTemplate = `{
                 }
             }
         },
-        "types.ResendVerificationRequest": {
+        "types.SendVerificationCodeRequest": {
             "type": "object",
             "required": [
-                "email"
+                "user_email_id"
             ],
             "properties": {
-                "email": {
-                    "type": "string"
-                }
-            }
-        },
-        "types.RetrySubmitTransactionRequest": {
-            "type": "object",
-            "required": [
-                "id",
-                "tx_hash"
-            ],
-            "properties": {
-                "id": {
+                "user_email_id": {
                     "type": "integer"
-                },
-                "tx_hash": {
-                    "description": "新的交易哈希",
-                    "type": "string"
-                }
-            }
-        },
-        "types.SetPendingAdminRequest": {
-            "type": "object",
-            "required": [
-                "id",
-                "new_pending_admin"
-            ],
-            "properties": {
-                "id": {
-                    "type": "integer"
-                },
-                "new_pending_admin": {
-                    "type": "string"
                 }
             }
         },
@@ -7033,6 +5043,61 @@ const docTemplate = `{
                 "SponsorTypeSponsor"
             ]
         },
+        "types.SubscriptionListResponse": {
+            "type": "object",
+            "properties": {
+                "subscriptions": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/types.SubscriptionResponse"
+                    }
+                },
+                "total": {
+                    "type": "integer"
+                }
+            }
+        },
+        "types.SubscriptionResponse": {
+            "type": "object",
+            "properties": {
+                "chain_id": {
+                    "type": "integer"
+                },
+                "chain_name": {
+                    "type": "string"
+                },
+                "contract_address": {
+                    "type": "string"
+                },
+                "created_at": {
+                    "type": "string"
+                },
+                "email": {
+                    "type": "string"
+                },
+                "id": {
+                    "type": "integer"
+                },
+                "is_active": {
+                    "type": "boolean"
+                },
+                "notify_on": {
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    }
+                },
+                "timelock_standard": {
+                    "type": "string"
+                },
+                "updated_at": {
+                    "type": "string"
+                },
+                "user_email_id": {
+                    "type": "integer"
+                }
+            }
+        },
         "types.SupportChain": {
             "type": "object",
             "properties": {
@@ -7103,353 +5168,13 @@ const docTemplate = `{
                 }
             }
         },
-        "types.TimeLockDetailResponse": {
+        "types.TimeLockPermissionRefreshRequest": {
             "type": "object",
-            "properties": {
-                "compound_data": {
-                    "$ref": "#/definitions/types.CompoundTimeLockWithPermission"
-                },
-                "openzeppelin_data": {
-                    "$ref": "#/definitions/types.OpenzeppelinTimeLockWithPermission"
-                },
-                "standard": {
-                    "$ref": "#/definitions/types.TimeLockStandard"
-                }
-            }
-        },
-        "types.TimeLockStandard": {
-            "type": "string",
-            "enum": [
-                "compound",
-                "openzeppelin"
+            "required": [
+                "user_address"
             ],
-            "x-enum-varnames": [
-                "CompoundStandard",
-                "OpenzeppelinStandard"
-            ]
-        },
-        "types.TimeLockStatus": {
-            "type": "string",
-            "enum": [
-                "active",
-                "inactive",
-                "deleted"
-            ],
-            "x-enum-comments": {
-                "TimeLockActive": "激活状态",
-                "TimeLockDeleted": "已删除",
-                "TimeLockInactive": "非激活状态"
-            },
-            "x-enum-varnames": [
-                "TimeLockActive",
-                "TimeLockInactive",
-                "TimeLockDeleted"
-            ]
-        },
-        "types.TransactionDetailResponse": {
-            "type": "object",
             "properties": {
-                "can_cancel": {
-                    "description": "是否可以取消",
-                    "type": "boolean"
-                },
-                "can_execute": {
-                    "description": "是否可以执行",
-                    "type": "boolean"
-                },
-                "can_retry_submit": {
-                    "description": "是否可以重试提交",
-                    "type": "boolean"
-                },
-                "canceled_at": {
-                    "description": "取消时间",
-                    "type": "string"
-                },
-                "chain_id": {
-                    "description": "链ID",
-                    "type": "integer"
-                },
-                "chain_name": {
-                    "description": "链名称",
-                    "type": "string"
-                },
-                "created_at": {
-                    "type": "string"
-                },
-                "creator_address": {
-                    "description": "交易创建者地址",
-                    "type": "string"
-                },
-                "description": {
-                    "description": "交易描述",
-                    "type": "string"
-                },
-                "eta": {
-                    "description": "预计执行时间(Unix时间戳)",
-                    "type": "integer"
-                },
-                "executed_at": {
-                    "description": "执行时间",
-                    "type": "string"
-                },
-                "function_sig": {
-                    "description": "函数签名",
-                    "type": "string"
-                },
-                "id": {
-                    "type": "integer"
-                },
-                "operation_id": {
-                    "description": "OpenZeppelin操作ID (32字节哈希)",
-                    "type": "string"
-                },
-                "queued_at": {
-                    "description": "入队时间",
-                    "type": "string"
-                },
-                "status": {
-                    "description": "状态",
-                    "allOf": [
-                        {
-                            "$ref": "#/definitions/types.TransactionStatus"
-                        }
-                    ]
-                },
-                "status_message": {
-                    "description": "状态消息",
-                    "type": "string"
-                },
-                "target": {
-                    "description": "目标合约地址",
-                    "type": "string"
-                },
-                "time_remaining": {
-                    "description": "剩余时间(秒)，负数表示已过期",
-                    "type": "integer"
-                },
-                "timelock_address": {
-                    "description": "Timelock合约地址",
-                    "type": "string"
-                },
-                "timelock_info": {
-                    "description": "Timelock合约信息"
-                },
-                "timelock_standard": {
-                    "description": "Timelock标准",
-                    "allOf": [
-                        {
-                            "$ref": "#/definitions/types.TimeLockStandard"
-                        }
-                    ]
-                },
-                "tx_data": {
-                    "description": "交易数据",
-                    "type": "string"
-                },
-                "tx_hash": {
-                    "description": "交易哈希",
-                    "type": "string"
-                },
-                "updated_at": {
-                    "type": "string"
-                },
-                "user_permissions": {
-                    "description": "creator, executor, canceller",
-                    "type": "array",
-                    "items": {
-                        "type": "string"
-                    }
-                },
-                "value": {
-                    "description": "转账金额(wei)",
-                    "type": "string"
-                }
-            }
-        },
-        "types.TransactionStatsResponse": {
-            "type": "object",
-            "properties": {
-                "canceled_count": {
-                    "type": "integer"
-                },
-                "executed_count": {
-                    "type": "integer"
-                },
-                "executing_count": {
-                    "type": "integer"
-                },
-                "expired_count": {
-                    "type": "integer"
-                },
-                "failed_count": {
-                    "type": "integer"
-                },
-                "queued_count": {
-                    "type": "integer"
-                },
-                "ready_count": {
-                    "type": "integer"
-                },
-                "submit_failed_count": {
-                    "type": "integer"
-                },
-                "submitting_count": {
-                    "type": "integer"
-                },
-                "total_transactions": {
-                    "type": "integer"
-                }
-            }
-        },
-        "types.TransactionStatus": {
-            "type": "string",
-            "enum": [
-                "submitting",
-                "queued",
-                "ready",
-                "executing",
-                "executed",
-                "failed",
-                "submit_failed",
-                "expired",
-                "canceled"
-            ],
-            "x-enum-comments": {
-                "TransactionCanceled": "已取消",
-                "TransactionExecuted": "已执行并确认",
-                "TransactionExecuting": "执行中（等待区块链确认）",
-                "TransactionExpired": "已过期",
-                "TransactionFailed": "执行失败",
-                "TransactionQueued": "已成功提交到timelock，等待ETA",
-                "TransactionReady": "就绪（可以执行）",
-                "TransactionSubmitFailed": "提交失败",
-                "TransactionSubmitting": "正在提交到timelock合约"
-            },
-            "x-enum-varnames": [
-                "TransactionSubmitting",
-                "TransactionQueued",
-                "TransactionReady",
-                "TransactionExecuting",
-                "TransactionExecuted",
-                "TransactionFailed",
-                "TransactionSubmitFailed",
-                "TransactionExpired",
-                "TransactionCanceled"
-            ]
-        },
-        "types.TransactionWithPermission": {
-            "type": "object",
-            "properties": {
-                "can_cancel": {
-                    "description": "是否可以取消",
-                    "type": "boolean"
-                },
-                "can_execute": {
-                    "description": "是否可以执行",
-                    "type": "boolean"
-                },
-                "can_retry_submit": {
-                    "description": "是否可以重试提交",
-                    "type": "boolean"
-                },
-                "canceled_at": {
-                    "description": "取消时间",
-                    "type": "string"
-                },
-                "chain_id": {
-                    "description": "链ID",
-                    "type": "integer"
-                },
-                "chain_name": {
-                    "description": "链名称",
-                    "type": "string"
-                },
-                "created_at": {
-                    "type": "string"
-                },
-                "creator_address": {
-                    "description": "交易创建者地址",
-                    "type": "string"
-                },
-                "description": {
-                    "description": "交易描述",
-                    "type": "string"
-                },
-                "eta": {
-                    "description": "预计执行时间(Unix时间戳)",
-                    "type": "integer"
-                },
-                "executed_at": {
-                    "description": "执行时间",
-                    "type": "string"
-                },
-                "function_sig": {
-                    "description": "函数签名",
-                    "type": "string"
-                },
-                "id": {
-                    "type": "integer"
-                },
-                "operation_id": {
-                    "description": "OpenZeppelin操作ID (32字节哈希)",
-                    "type": "string"
-                },
-                "queued_at": {
-                    "description": "入队时间",
-                    "type": "string"
-                },
-                "status": {
-                    "description": "状态",
-                    "allOf": [
-                        {
-                            "$ref": "#/definitions/types.TransactionStatus"
-                        }
-                    ]
-                },
-                "status_message": {
-                    "description": "状态消息",
-                    "type": "string"
-                },
-                "target": {
-                    "description": "目标合约地址",
-                    "type": "string"
-                },
-                "time_remaining": {
-                    "description": "剩余时间(秒)，负数表示已过期",
-                    "type": "integer"
-                },
-                "timelock_address": {
-                    "description": "Timelock合约地址",
-                    "type": "string"
-                },
-                "timelock_standard": {
-                    "description": "Timelock标准",
-                    "allOf": [
-                        {
-                            "$ref": "#/definitions/types.TimeLockStandard"
-                        }
-                    ]
-                },
-                "tx_data": {
-                    "description": "交易数据",
-                    "type": "string"
-                },
-                "tx_hash": {
-                    "description": "交易哈希",
-                    "type": "string"
-                },
-                "updated_at": {
-                    "type": "string"
-                },
-                "user_permissions": {
-                    "description": "creator, executor, canceller",
-                    "type": "array",
-                    "items": {
-                        "type": "string"
-                    }
-                },
-                "value": {
-                    "description": "转账金额(wei)",
+                "user_address": {
                     "type": "string"
                 }
             }
@@ -7475,17 +5200,11 @@ const docTemplate = `{
                 }
             }
         },
-        "types.UpdateEmailNotificationRequest": {
+        "types.UpdateEmailRemarkRequest": {
             "type": "object",
             "properties": {
-                "email_remark": {
+                "remark": {
                     "type": "string"
-                },
-                "timelock_contracts": {
-                    "type": "array",
-                    "items": {
-                        "type": "string"
-                    }
                 }
             }
         },
@@ -7525,30 +5244,51 @@ const docTemplate = `{
                 }
             }
         },
+        "types.UpdateSubscriptionRequest": {
+            "type": "object",
+            "required": [
+                "notify_on"
+            ],
+            "properties": {
+                "is_active": {
+                    "type": "boolean"
+                },
+                "notify_on": {
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    }
+                }
+            }
+        },
         "types.UpdateTimeLockRequest": {
             "type": "object",
             "required": [
-                "id",
-                "standard"
+                "chain_id",
+                "contract_address",
+                "standard",
+                "user_address"
             ],
             "properties": {
-                "id": {
+                "chain_id": {
                     "type": "integer"
+                },
+                "contract_address": {
+                    "type": "string"
                 },
                 "remark": {
                     "type": "string",
                     "maxLength": 500
                 },
                 "standard": {
+                    "type": "string",
                     "enum": [
                         "compound",
                         "openzeppelin"
-                    ],
-                    "allOf": [
-                        {
-                            "$ref": "#/definitions/types.TimeLockStandard"
-                        }
                     ]
+                },
+                "user_address": {
+                    "type": "string"
                 }
             }
         },
@@ -7601,6 +5341,29 @@ const docTemplate = `{
                 }
             }
         },
+        "types.UserEmailResponse": {
+            "type": "object",
+            "properties": {
+                "created_at": {
+                    "type": "string"
+                },
+                "email": {
+                    "type": "string"
+                },
+                "id": {
+                    "type": "integer"
+                },
+                "is_verified": {
+                    "type": "boolean"
+                },
+                "last_verified_at": {
+                    "type": "string"
+                },
+                "remark": {
+                    "type": "string"
+                }
+            }
+        },
         "types.UserProfile": {
             "type": "object",
             "properties": {
@@ -7621,15 +5384,15 @@ const docTemplate = `{
         "types.VerifyEmailRequest": {
             "type": "object",
             "required": [
-                "email",
-                "verification_code"
+                "code",
+                "user_email_id"
             ],
             "properties": {
-                "email": {
+                "code": {
                     "type": "string"
                 },
-                "verification_code": {
-                    "type": "string"
+                "user_email_id": {
+                    "type": "integer"
                 }
             }
         },

@@ -5,38 +5,43 @@ import (
 	"net/http"
 	"os"
 	"os/signal"
-	"strings"
+	"sync"
 	"syscall"
+	"time"
 
 	"timelocker-backend/docs"
 	abiHandler "timelocker-backend/internal/api/abi"
 	assetHandler "timelocker-backend/internal/api/asset"
 	authHandler "timelocker-backend/internal/api/auth"
 	chainHandler "timelocker-backend/internal/api/chain"
-	emailNotificationHandler "timelocker-backend/internal/api/email_notification"
+	emailHandler "timelocker-backend/internal/api/email"
+	flowHandler "timelocker-backend/internal/api/flow"
 	sponsorHandler "timelocker-backend/internal/api/sponsor"
 	timelockHandler "timelocker-backend/internal/api/timelock"
-	transactionHandler "timelocker-backend/internal/api/transaction"
+
 	"timelocker-backend/internal/config"
 	abiRepo "timelocker-backend/internal/repository/abi"
 	assetRepo "timelocker-backend/internal/repository/asset"
 	chainRepo "timelocker-backend/internal/repository/chain"
-	emailNotificationRepo "timelocker-backend/internal/repository/email_notification"
+	emailRepo "timelocker-backend/internal/repository/email"
+
+	scannerRepo "timelocker-backend/internal/repository/scanner"
 	sponsorRepo "timelocker-backend/internal/repository/sponsor"
 	timelockRepo "timelocker-backend/internal/repository/timelock"
-	transactionRepo "timelocker-backend/internal/repository/transaction"
+
 	userRepo "timelocker-backend/internal/repository/user"
 	abiService "timelocker-backend/internal/service/abi"
 	assetService "timelocker-backend/internal/service/asset"
 	authService "timelocker-backend/internal/service/auth"
 	chainService "timelocker-backend/internal/service/chain"
-	emailNotificationService "timelocker-backend/internal/service/email_notification"
+	emailService "timelocker-backend/internal/service/email"
+	flowService "timelocker-backend/internal/service/flow"
+	scannerService "timelocker-backend/internal/service/scanner"
 	sponsorService "timelocker-backend/internal/service/sponsor"
 	timelockService "timelocker-backend/internal/service/timelock"
-	transactionService "timelocker-backend/internal/service/transaction"
-	"timelocker-backend/pkg/blockchain"
+
 	"timelocker-backend/pkg/database"
-	"timelocker-backend/pkg/email"
+
 	"timelocker-backend/pkg/logger"
 	"timelocker-backend/pkg/utils"
 
@@ -72,9 +77,23 @@ func healthCheck(c *gin.Context) {
 	})
 }
 
+// updateAllScannersStatusToPaused 更新所有扫链器状态为暂停
+func updateAllScannersStatusToPaused(ctx context.Context, progressRepo scannerRepo.ProgressRepository) error {
+	// 批量更新所有运行中的扫描器状态为 paused
+	return progressRepo.UpdateAllRunningScannersToPaused(ctx)
+}
+
 func main() {
 	logger.Init(logger.DefaultConfig())
 	logger.Info("Starting TimeLocker Backend v2.0.0")
+
+	// 创建根context和WaitGroup用于协调关闭
+	ctx, cancel := context.WithCancel(context.Background())
+	var wg sync.WaitGroup
+
+	// 设置信号处理
+	sigCh := make(chan os.Signal, 1)
+	signal.Notify(sigCh, syscall.SIGINT, syscall.SIGTERM)
 
 	// 1. 加载配置
 	cfg, err := config.LoadConfig()
@@ -104,8 +123,12 @@ func main() {
 	abiRepository := abiRepo.NewRepository(db)
 	sponsorRepository := sponsorRepo.NewRepository(db)
 	timelockRepository := timelockRepo.NewRepository(db)
-	transactionRepository := transactionRepo.NewRepository(db)
-	emailNotificationRepository := emailNotificationRepo.NewRepository(db)
+	emailRepository := emailRepo.NewEmailRepository(db)
+
+	// 扫链相关仓库
+	progressRepository := scannerRepo.NewProgressRepository(db)
+	transactionRepository := scannerRepo.NewTransactionRepository(db)
+	flowRepository := scannerRepo.NewFlowRepository(db)
 
 	// 5. 初始化JWT管理器
 	jwtManager := utils.NewJWTManager(
@@ -114,10 +137,7 @@ func main() {
 		cfg.JWT.RefreshExpiry,
 	)
 
-	// 6. 初始化邮件服务
-	emailSvc := email.NewService(&cfg.Email)
-
-	// 7. 初始化服务层
+	// 6. 初始化服务层
 	authSvc := authService.NewService(userRepository, jwtManager)
 	assetSvc := assetService.NewService(
 		&cfg.Covalent,
@@ -129,35 +149,23 @@ func main() {
 	abiSvc := abiService.NewService(abiRepository)
 	chainSvc := chainService.NewService(chainRepository)
 	sponsorSvc := sponsorService.NewService(sponsorRepository)
-	timelockSvc := timelockService.NewService(timelockRepository)
-	transactionSvc := transactionService.NewService(transactionRepository, timelockRepository)
-	emailNotificationSvc := emailNotificationService.NewService(emailNotificationRepository, emailSvc, &cfg.Email)
+	emailSvc := emailService.NewEmailService(emailRepository, cfg)
+	flowSvc := flowService.NewFlowService(flowRepository)
 
-	// 7. 初始化区块链监听器
-	eventListener := blockchain.NewEventListener(cfg, transactionSvc, emailNotificationSvc, chainRepository, timelockRepository, db)
-	go func() {
-		if err := eventListener.Start(context.Background()); err != nil {
-			logger.Error("Failed to start event listener: ", err)
-		}
-	}()
-
-	// 8. 初始化处理器
+	// 7. 初始化处理器
 	authHandler := authHandler.NewHandler(authSvc)
 	assetHandler := assetHandler.NewHandler(assetSvc, authSvc)
 	abiHandler := abiHandler.NewHandler(abiSvc, authSvc)
 	chainHandler := chainHandler.NewHandler(chainSvc)
 	sponsorHdl := sponsorHandler.NewHandler(sponsorSvc, authSvc)
-	timelockHandler := timelockHandler.NewHandler(timelockSvc, authSvc)
-	transactionHandler := transactionHandler.NewHandler(transactionSvc, authSvc)
-	emailNotificationHdl := emailNotificationHandler.NewHandler(emailNotificationSvc, authSvc)
+	emailHdl := emailHandler.NewEmailHandler(emailSvc, authSvc)
+	flowHdl := flowHandler.NewFlowHandler(flowSvc)
 
-	// 9. 设置Gin模式
+	// 8. 设置Gin和路由
 	gin.SetMode(cfg.Server.Mode)
-
-	// 10. 创建路由器
 	router := gin.Default()
 
-	// 11. 添加CORS中间件
+	// 9. 添加CORS中间件
 	router.Use(func(c *gin.Context) {
 		c.Header("Access-Control-Allow-Origin", "*")
 		c.Header("Access-Control-Allow-Methods", "GET, POST, PUT, DELETE, OPTIONS")
@@ -171,7 +179,7 @@ func main() {
 		c.Next()
 	})
 
-	// 12. 注册API路由
+	// 10. 注册API路由
 	v1 := router.Group("/api/v1")
 	{
 		authHandler.RegisterRoutes(v1)
@@ -179,99 +187,164 @@ func main() {
 		abiHandler.RegisterRoutes(v1)
 		chainHandler.RegisterRoutes(v1)
 		sponsorHdl.RegisterRoutes(v1)
-		timelockHandler.RegisterRoutes(v1)
-		transactionHandler.RegisterRoutes(v1)
-		emailNotificationHdl.RegisterRoutes(v1)
+		emailHdl.RegisterRoutes(v1)
+		flowHdl.RegisterRoutes(v1)
 	}
 
-	// 13. Swagger API文档端点
+	// 11. Swagger API文档端点
 	docs.SwaggerInfo.Host = "localhost:" + cfg.Server.Port
 	docs.SwaggerInfo.Title = "TimeLocker Backend API v2.0"
-	docs.SwaggerInfo.Description = "TimeLocker Backend API with Transaction Management"
+	docs.SwaggerInfo.Description = "TimeLocker Backend API"
 	router.GET("/swagger/*any", ginSwagger.WrapHandler(swaggerFiles.Handler))
 
-	// 14. 健康检查端点
+	// 12. 健康检查端点
 	router.GET("/health", healthCheck)
 
-	// 15. 系统状态端点
-	router.GET("/api/v1/system/rpc-status", func(c *gin.Context) {
-		// 从数据库获取启用RPC的链配置
-		chains, err := chainRepository.GetRPCEnabledChains(c.Request.Context(), cfg.RPC.IncludeTestnets)
-		if err != nil {
-			c.JSON(http.StatusInternalServerError, gin.H{
-				"success": false,
-				"error":   "Failed to get chain configurations: " + err.Error(),
-			})
-			return
-		}
+	// 13. 启动RPC管理器
+	rpcManager := scannerService.NewRPCManager(cfg, chainRepository)
+	if err := rpcManager.Start(ctx); err != nil {
+		logger.Error("Failed to start RPC manager", err)
+	} else {
+		logger.Info("RPC Manager started successfully")
+	}
 
-		status := make(map[string]interface{})
+	// 14. 启动扫链管理器
+	scannerManager := scannerService.NewManager(
+		cfg,
+		chainRepository,
+		timelockRepository,
+		progressRepository,
+		transactionRepository,
+		flowRepository,
+		rpcManager,
+		emailSvc,
+	)
+	if err := scannerManager.Start(ctx); err != nil {
+		logger.Error("Failed to start scanner manager", err)
+	} else {
+		logger.Info("Scanner Manager started successfully")
+	}
 
-		for _, chainInfo := range chains {
-			rpcURL, err := cfg.GetRPCURL(&chainInfo)
+	// 15. 初始化timelock服务（依赖RPC管理器）
+	timelockSvc := timelockService.NewService(timelockRepository, chainRepository, rpcManager, cfg)
+	timelockHandler := timelockHandler.NewHandler(timelockSvc, authSvc)
+	timelockHandler.RegisterRoutes(v1)
 
-			chainStatus := map[string]interface{}{
-				"chain_id":     chainInfo.ChainID,
-				"display_name": chainInfo.DisplayName,
-				"rpc_enabled":  chainInfo.RPCEnabled,
-				"is_testnet":   chainInfo.IsTestnet,
-			}
-
-			if err != nil {
-				chainStatus["status"] = "error"
-				chainStatus["error"] = err.Error()
-			} else {
-				chainStatus["status"] = "configured"
-				chainStatus["rpc_url"] = rpcURL
-				chainStatus["has_api_key"] = !strings.Contains(rpcURL, "YOUR_API_KEY") &&
-					!strings.Contains(rpcURL, "YOUR_ALCHEMY_API_KEY") &&
-					!strings.Contains(rpcURL, "YOUR_INFURA_API_KEY")
-			}
-
-			status[chainInfo.ChainName] = chainStatus
-		}
-
-		response := map[string]interface{}{
-			"provider": cfg.RPC.Provider,
-			"api_keys": map[string]interface{}{
-				"alchemy": map[string]interface{}{
-					"configured": cfg.RPC.AlchemyAPIKey != "" && cfg.RPC.AlchemyAPIKey != "YOUR_ALCHEMY_API_KEY",
-				},
-				"infura": map[string]interface{}{
-					"configured": cfg.RPC.InfuraAPIKey != "" && cfg.RPC.InfuraAPIKey != "YOUR_INFURA_API_KEY",
-				},
-			},
-			"include_testnets": cfg.RPC.IncludeTestnets,
-			"chains":           status,
-		}
-
-		c.JSON(http.StatusOK, gin.H{
-			"success": true,
-			"data":    response,
-		})
-	})
-
-	// 16. 设置优雅关闭
-	sigCh := make(chan os.Signal, 1)
-	signal.Notify(sigCh, syscall.SIGINT, syscall.SIGTERM)
-
+	// 16. 启动定时任务
+	wg.Add(1)
 	go func() {
-		<-sigCh
-		logger.Info("Received shutdown signal, stopping services...")
+		defer wg.Done()
+		defer logger.Info("Timelock refresh task stopped")
 
-		// 停止区块链监听器
-		eventListener.Stop()
+		ticker := time.NewTicker(2 * time.Hour)
+		defer ticker.Stop()
 
-		os.Exit(0)
+		for {
+			select {
+			case <-ctx.Done():
+				return
+			case <-ticker.C:
+				logger.Info("Starting scheduled timelock data refresh")
+				if err := timelockSvc.RefreshAllTimeLockData(ctx); err != nil {
+					logger.Error("Failed to refresh timelock data", err)
+				} else {
+					logger.Info("Scheduled timelock data refresh completed successfully")
+				}
+			}
+		}
 	}()
 
-	// 17. 启动服务器
-	addr := ":" + cfg.Server.Port
-	logger.Info("Starting server on ", "address", addr)
-	logger.Info("Swagger documentation available at: http://localhost:" + cfg.Server.Port + "/swagger/index.html")
+	// 17. 启动邮箱验证码清理定时任务
+	wg.Add(1)
+	go func() {
+		defer wg.Done()
+		defer logger.Info("Email verification code cleanup task stopped")
 
-	if err := router.Run(addr); err != nil {
-		logger.Error("Failed to start server: ", err)
-		os.Exit(1)
+		ticker := time.NewTicker(30 * time.Minute) // 每30分钟清理一次过期验证码
+		defer ticker.Stop()
+
+		for {
+			select {
+			case <-ctx.Done():
+				return
+			case <-ticker.C:
+				logger.Info("Starting scheduled email verification code cleanup")
+				if err := emailSvc.CleanExpiredCodes(ctx); err != nil {
+					logger.Error("Failed to clean expired verification codes", err)
+				} else {
+					logger.Info("Scheduled email verification code cleanup completed successfully")
+				}
+			}
+		}
+	}()
+
+	// 18. 启动HTTP服务器
+	addr := ":" + cfg.Server.Port
+	srv := &http.Server{
+		Addr:    addr,
+		Handler: router,
+	}
+
+	wg.Add(1)
+	go func() {
+		defer wg.Done()
+		logger.Info("Starting server on ", "address", addr)
+		logger.Info("Swagger documentation available at: http://localhost:" + cfg.Server.Port + "/swagger/index.html")
+
+		if err := srv.ListenAndServe(); err != nil && err != http.ErrServerClosed {
+			logger.Error("HTTP server error: ", err)
+			cancel() // 通知其他组件关闭
+		}
+	}()
+
+	// 19. 等待关闭信号
+	<-sigCh
+	logger.Info("Received shutdown signal, starting graceful shutdown...")
+
+	// 20. 开始优雅关闭（逆序关闭）
+
+	// Step 1: 停止HTTP服务器（最后启动的最先关闭）
+	logger.Info("Stopping HTTP server...")
+	shutdownCtx, shutdownCancel := context.WithTimeout(context.Background(), 10*time.Second)
+	if err := srv.Shutdown(shutdownCtx); err != nil {
+		logger.Error("HTTP server shutdown error: ", err)
+	} else {
+		logger.Info("HTTP server stopped")
+	}
+	shutdownCancel()
+
+	// Step 2: 取消context，通知所有扫链组件停止
+	logger.Info("Cancelling context to stop all scanner services...")
+	cancel()
+
+	// Step 3: 停止扫链管理器（会自动更新状态为paused）
+	logger.Info("Stopping scanner manager...")
+	scannerManager.Stop()
+
+	// Step 4: 停止RPC管理器
+	logger.Info("Stopping RPC manager...")
+	rpcManager.Stop()
+
+	// Step 5: 确保所有扫链器状态已更新为paused（兜底保护）
+	logger.Info("Ensuring all scanner status updated to paused...")
+	shutdownCtx, shutdownCancel = context.WithTimeout(context.Background(), 3*time.Second)
+	if err := updateAllScannersStatusToPaused(shutdownCtx, progressRepository); err != nil {
+		logger.Error("Failed to ensure scanner status paused: ", err)
+	}
+	shutdownCancel()
+
+	// Step 6: 等待所有goroutine结束
+	logger.Info("Waiting for all goroutines to finish...")
+	done := make(chan struct{})
+	go func() {
+		wg.Wait()
+		close(done)
+	}()
+
+	select {
+	case <-done:
+		logger.Info("All services stopped gracefully")
+	case <-time.After(15 * time.Second):
+		logger.Error("Timeout waiting for services to stop, forcing exit", nil)
 	}
 }

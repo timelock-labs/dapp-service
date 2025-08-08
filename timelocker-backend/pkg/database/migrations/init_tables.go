@@ -262,14 +262,15 @@ func (h *MigrationHandler) createInitialTables(ctx context.Context) error {
 			chain_id INTEGER NOT NULL,
 			chain_name VARCHAR(50) NOT NULL,
 			contract_address VARCHAR(42) NOT NULL,
-			tx_hash VARCHAR(66),
-			min_delay BIGINT NOT NULL,
+			delay BIGINT NOT NULL,
 			admin VARCHAR(42) NOT NULL,
 			pending_admin VARCHAR(42),
+			grace_period BIGINT NOT NULL,
+			minimum_delay BIGINT NOT NULL,
+			maximum_delay BIGINT NOT NULL,
 			remark VARCHAR(500) DEFAULT '',
 			status VARCHAR(20) NOT NULL DEFAULT 'active' CHECK (status IN ('active', 'inactive', 'deleted')),
 			is_imported BOOLEAN NOT NULL DEFAULT false,
-			emergency_mode BOOLEAN NOT NULL DEFAULT false,
 			created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
 			updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
 			UNIQUE(chain_id, contract_address)
@@ -290,15 +291,13 @@ func (h *MigrationHandler) createInitialTables(ctx context.Context) error {
 			chain_id INTEGER NOT NULL,
 			chain_name VARCHAR(50) NOT NULL,
 			contract_address VARCHAR(42) NOT NULL,
-			tx_hash VARCHAR(66),
-			min_delay BIGINT NOT NULL,
+			delay BIGINT NOT NULL,
+			admin VARCHAR(42),
 			proposers TEXT NOT NULL,
 			executors TEXT NOT NULL,
-			cancellers TEXT NOT NULL,
 			remark VARCHAR(500) DEFAULT '',
 			status VARCHAR(20) NOT NULL DEFAULT 'active' CHECK (status IN ('active', 'inactive', 'deleted')),
 			is_imported BOOLEAN NOT NULL DEFAULT false,
-			emergency_mode BOOLEAN NOT NULL DEFAULT false,
 			created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
 			updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
 			UNIQUE(chain_id, contract_address)
@@ -310,115 +309,7 @@ func (h *MigrationHandler) createInitialTables(ctx context.Context) error {
 		logger.Info("Created table: openzeppelin_timelocks")
 	}
 
-	// 7. 交易记录表
-	if !h.db.Migrator().HasTable("transactions") {
-		createTransactionsTable := `
-		CREATE TABLE transactions (
-			id BIGSERIAL PRIMARY KEY,
-			creator_address VARCHAR(42) NOT NULL REFERENCES users(wallet_address) ON DELETE CASCADE,
-			chain_id INTEGER NOT NULL,
-			chain_name VARCHAR(50) NOT NULL,
-			timelock_address VARCHAR(42) NOT NULL,
-			timelock_standard VARCHAR(20) NOT NULL CHECK (timelock_standard IN ('compound', 'openzeppelin')),
-			tx_hash VARCHAR(66) NOT NULL UNIQUE,
-			tx_data TEXT NOT NULL,
-			target VARCHAR(42) NOT NULL,
-			value VARCHAR(100) NOT NULL DEFAULT '0',
-			function_sig VARCHAR(200),
-			eta BIGINT NOT NULL,
-			queued_at TIMESTAMP WITH TIME ZONE,
-			executed_at TIMESTAMP WITH TIME ZONE,
-			canceled_at TIMESTAMP WITH TIME ZONE,
-			status VARCHAR(20) NOT NULL DEFAULT 'queued' CHECK (status IN ('queued', 'ready', 'executed', 'expired', 'canceled')),
-			description VARCHAR(500) DEFAULT '',
-			created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
-			updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
-		)`
-
-		if err := h.db.WithContext(ctx).Exec(createTransactionsTable).Error; err != nil {
-			return fmt.Errorf("failed to create transactions table: %w", err)
-		}
-		logger.Info("Created table: transactions")
-	}
-
-	// 8. 邮件通知配置表
-	if !h.db.Migrator().HasTable("email_notifications") {
-		createEmailNotificationsTable := `
-		CREATE TABLE email_notifications (
-			id BIGSERIAL PRIMARY KEY,
-			wallet_address VARCHAR(42) NOT NULL REFERENCES users(wallet_address) ON DELETE CASCADE,
-			email VARCHAR(255) NOT NULL,
-			email_remark VARCHAR(200) DEFAULT '',
-			timelock_contracts TEXT NOT NULL DEFAULT '[]',
-			is_verified BOOLEAN NOT NULL DEFAULT false,
-			verification_code VARCHAR(6),
-			verification_expires_at TIMESTAMP WITH TIME ZONE,
-			is_active BOOLEAN NOT NULL DEFAULT true,
-			created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
-			updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
-			UNIQUE(wallet_address, email)
-		)`
-
-		if err := h.db.WithContext(ctx).Exec(createEmailNotificationsTable).Error; err != nil {
-			return fmt.Errorf("failed to create email_notifications table: %w", err)
-		}
-		logger.Info("Created table: email_notifications")
-	}
-
-	// 9. 邮件发送记录表
-	if !h.db.Migrator().HasTable("email_send_logs") {
-		createEmailSendLogsTable := `
-		CREATE TABLE email_send_logs (
-			id BIGSERIAL PRIMARY KEY,
-			email_notification_id BIGINT NOT NULL REFERENCES email_notifications(id) ON DELETE CASCADE,
-			email VARCHAR(255) NOT NULL,
-			timelock_address VARCHAR(42) NOT NULL,
-			transaction_hash VARCHAR(66),
-			event_type VARCHAR(50) NOT NULL,
-			subject VARCHAR(500) NOT NULL,
-			content TEXT NOT NULL,
-			is_emergency BOOLEAN NOT NULL DEFAULT false,
-			emergency_reply_token VARCHAR(64),
-			is_replied BOOLEAN NOT NULL DEFAULT false,
-			replied_at TIMESTAMP WITH TIME ZONE,
-			send_status VARCHAR(20) NOT NULL DEFAULT 'pending',
-			send_attempts INTEGER NOT NULL DEFAULT 0,
-			error_message TEXT,
-			sent_at TIMESTAMP WITH TIME ZONE,
-			created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
-			updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
-		)`
-
-		if err := h.db.WithContext(ctx).Exec(createEmailSendLogsTable).Error; err != nil {
-			return fmt.Errorf("failed to create email_send_logs table: %w", err)
-		}
-		logger.Info("Created table: email_send_logs")
-	}
-
-	// 10. 应急通知追踪表
-	if !h.db.Migrator().HasTable("emergency_notifications") {
-		createEmergencyNotificationsTable := `
-		CREATE TABLE emergency_notifications (
-			id BIGSERIAL PRIMARY KEY,
-			timelock_address VARCHAR(42) NOT NULL,
-			transaction_hash VARCHAR(66) NOT NULL,
-			event_type VARCHAR(50) NOT NULL,
-			replied_emails INTEGER NOT NULL DEFAULT 0,
-			is_completed BOOLEAN NOT NULL DEFAULT false,
-			next_send_at TIMESTAMP WITH TIME ZONE,
-			send_count INTEGER NOT NULL DEFAULT 1,
-			created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
-			updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
-			UNIQUE(timelock_address, transaction_hash, event_type)
-		)`
-
-		if err := h.db.WithContext(ctx).Exec(createEmergencyNotificationsTable).Error; err != nil {
-			return fmt.Errorf("failed to create emergency_notifications table: %w", err)
-		}
-		logger.Info("Created table: emergency_notifications")
-	}
-
-	// 11. 赞助方和生态伙伴表
+	// 7. 赞助方和生态伙伴表
 	if !h.db.Migrator().HasTable("sponsors") {
 		createSponsorsTable := `
 		CREATE TABLE sponsors (
@@ -440,6 +331,229 @@ func (h *MigrationHandler) createInitialTables(ctx context.Context) error {
 		logger.Info("Created table: sponsors")
 	}
 
+	// 8. 区块扫描进度表
+	if !h.db.Migrator().HasTable("block_scan_progress") {
+		createBlockScanProgressTable := `
+		CREATE TABLE block_scan_progress (
+			id BIGSERIAL PRIMARY KEY,
+			chain_id INTEGER NOT NULL UNIQUE,
+			chain_name VARCHAR(50) NOT NULL,
+			last_scanned_block BIGINT NOT NULL DEFAULT 0,
+			latest_network_block BIGINT DEFAULT 0,
+			scan_status VARCHAR(20) NOT NULL DEFAULT 'running' CHECK (scan_status IN ('running', 'paused', 'error')),
+			error_message TEXT,
+			last_update_time TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+			created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+			updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+		)`
+
+		if err := h.db.WithContext(ctx).Exec(createBlockScanProgressTable).Error; err != nil {
+			return fmt.Errorf("failed to create block_scan_progress table: %w", err)
+		}
+		logger.Info("Created table: block_scan_progress")
+	}
+
+	// 9. Compound Timelock 交易记录表
+	if !h.db.Migrator().HasTable("compound_timelock_transactions") {
+		createCompoundTimelockTransactionsTable := `
+		CREATE TABLE compound_timelock_transactions (
+			id BIGSERIAL PRIMARY KEY,
+			tx_hash VARCHAR(66) NOT NULL,
+			block_number BIGINT NOT NULL,
+			block_timestamp TIMESTAMP WITH TIME ZONE NOT NULL,
+			chain_id INTEGER NOT NULL,
+			chain_name VARCHAR(50) NOT NULL,
+			contract_address VARCHAR(42) NOT NULL,
+			from_address VARCHAR(42) NOT NULL,
+			to_address VARCHAR(42) NOT NULL,
+			tx_status VARCHAR(20) NOT NULL DEFAULT 'failed' CHECK (tx_status IN ('success', 'failed')),
+			event_type VARCHAR(50) NOT NULL CHECK (event_type IN ('QueueTransaction', 'ExecuteTransaction', 'CancelTransaction')),
+			event_data JSONB NOT NULL,
+			event_tx_hash VARCHAR(128),
+			event_target VARCHAR(42),
+			event_value DECIMAL(36,0) DEFAULT 0,
+			event_function_signature VARCHAR(200),
+			event_call_data BYTEA,
+			event_eta BIGINT,
+			created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+			updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+			UNIQUE(tx_hash, contract_address, event_type)
+		)`
+
+		if err := h.db.WithContext(ctx).Exec(createCompoundTimelockTransactionsTable).Error; err != nil {
+			return fmt.Errorf("failed to create compound_timelock_transactions table: %w", err)
+		}
+		logger.Info("Created table: compound_timelock_transactions")
+	}
+
+	// 10. OpenZeppelin Timelock 交易记录表
+	if !h.db.Migrator().HasTable("openzeppelin_timelock_transactions") {
+		createOpenzeppelinTimelockTransactionsTable := `
+		CREATE TABLE openzeppelin_timelock_transactions (
+			id BIGSERIAL PRIMARY KEY,
+			tx_hash VARCHAR(66) NOT NULL,
+			block_number BIGINT NOT NULL,
+			block_timestamp TIMESTAMP WITH TIME ZONE NOT NULL,
+			chain_id INTEGER NOT NULL,
+			chain_name VARCHAR(50) NOT NULL,
+			contract_address VARCHAR(42) NOT NULL,
+			from_address VARCHAR(42) NOT NULL,
+			to_address VARCHAR(42) NOT NULL,
+			tx_status VARCHAR(20) NOT NULL DEFAULT 'failed' CHECK (tx_status IN ('success', 'failed')),
+			event_type VARCHAR(50) NOT NULL CHECK (event_type IN ('CallScheduled', 'CallExecuted', 'Cancelled')),
+			event_data JSONB NOT NULL,
+			event_id VARCHAR(66),
+			event_index INTEGER,
+			event_target VARCHAR(42),
+			event_value DECIMAL(36,0) DEFAULT 0,
+			event_call_data BYTEA,
+			event_predecessor VARCHAR(66),
+			event_delay BIGINT,
+			created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+			updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+			UNIQUE(tx_hash, contract_address, event_type)
+		)`
+
+		if err := h.db.WithContext(ctx).Exec(createOpenzeppelinTimelockTransactionsTable).Error; err != nil {
+			return fmt.Errorf("failed to create openzeppelin_timelock_transactions table: %w", err)
+		}
+		logger.Info("Created table: openzeppelin_timelock_transactions")
+	}
+
+	// 11. Timelock 交易流程关联表
+	if !h.db.Migrator().HasTable("timelock_transaction_flows") {
+		createTimelockTransactionFlowsTable := `
+		CREATE TABLE timelock_transaction_flows (
+			id BIGSERIAL PRIMARY KEY,
+			flow_id VARCHAR(128) NOT NULL,
+			timelock_standard VARCHAR(20) NOT NULL CHECK (timelock_standard IN ('compound', 'openzeppelin')),
+			chain_id INTEGER NOT NULL,
+			contract_address VARCHAR(42) NOT NULL,
+			status VARCHAR(20) NOT NULL DEFAULT 'waiting' CHECK (status IN ('waiting', 'ready', 'executed', 'cancelled', 'expired')),
+			propose_tx_hash VARCHAR(66),
+			queue_tx_hash VARCHAR(66),
+			execute_tx_hash VARCHAR(66),
+			cancel_tx_hash VARCHAR(66),
+			initiator_address VARCHAR(42),
+			queued_at TIMESTAMP WITH TIME ZONE,
+			executed_at TIMESTAMP WITH TIME ZONE,
+			cancelled_at TIMESTAMP WITH TIME ZONE,
+			eta TIMESTAMP WITH TIME ZONE,
+			expired_at TIMESTAMP WITH TIME ZONE,
+			target_address VARCHAR(42),
+			call_data BYTEA,
+			value DECIMAL(36,0) DEFAULT 0,
+			created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+			updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+			UNIQUE(flow_id, timelock_standard, chain_id, contract_address)
+		)`
+
+		if err := h.db.WithContext(ctx).Exec(createTimelockTransactionFlowsTable).Error; err != nil {
+			return fmt.Errorf("failed to create timelock_transaction_flows table: %w", err)
+		}
+		logger.Info("Created table: timelock_transaction_flows")
+	}
+
+	// 12. emails 表
+	if !h.db.Migrator().HasTable("emails") {
+		sql := `
+        CREATE TABLE emails (
+            id BIGSERIAL PRIMARY KEY,
+            email VARCHAR(200) NOT NULL UNIQUE,
+            is_deliverable BOOLEAN NOT NULL DEFAULT TRUE,
+            created_at TIMESTAMPTZ DEFAULT NOW(),
+            updated_at TIMESTAMPTZ DEFAULT NOW()
+        )`
+		if err := h.db.WithContext(ctx).Exec(sql).Error; err != nil {
+			return fmt.Errorf("failed to create emails table: %w", err)
+		}
+		logger.Info("Created table: emails")
+	}
+
+	// 13. user_emails 表
+	if !h.db.Migrator().HasTable("user_emails") {
+		sql := `
+        CREATE TABLE user_emails (
+            id BIGSERIAL PRIMARY KEY,
+            user_id BIGINT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+            email_id BIGINT NOT NULL REFERENCES emails(id) ON DELETE CASCADE,
+            remark VARCHAR(200),
+            is_verified BOOLEAN NOT NULL DEFAULT FALSE,
+            last_verified_at TIMESTAMPTZ,
+            created_at TIMESTAMPTZ DEFAULT NOW(),
+            updated_at TIMESTAMPTZ DEFAULT NOW(),
+            UNIQUE(user_id, email_id)
+        )`
+		if err := h.db.WithContext(ctx).Exec(sql).Error; err != nil {
+			return fmt.Errorf("failed to create user_emails table: %w", err)
+		}
+		logger.Info("Created table: user_emails")
+	}
+
+	// 14. user_email_subscriptions 表
+	if !h.db.Migrator().HasTable("user_email_subscriptions") {
+		sql := `
+        CREATE TABLE user_email_subscriptions (
+            id BIGSERIAL PRIMARY KEY,
+            user_email_id BIGINT NOT NULL REFERENCES user_emails(id) ON DELETE CASCADE,
+            timelock_standard VARCHAR(20) NOT NULL CHECK (timelock_standard IN ('compound','openzeppelin')),
+            chain_id INTEGER NOT NULL,
+            contract_address VARCHAR(42) NOT NULL,
+            notify_on JSONB NOT NULL DEFAULT '[]',
+            is_active BOOLEAN NOT NULL DEFAULT TRUE,
+            created_at TIMESTAMPTZ DEFAULT NOW(),
+            updated_at TIMESTAMPTZ DEFAULT NOW(),
+            UNIQUE(user_email_id, timelock_standard, chain_id, contract_address)
+        )`
+		if err := h.db.WithContext(ctx).Exec(sql).Error; err != nil {
+			return fmt.Errorf("failed to create user_email_subscriptions table: %w", err)
+		}
+		logger.Info("Created table: user_email_subscriptions")
+	}
+
+	// 15. email_verification_codes 表
+	if !h.db.Migrator().HasTable("email_verification_codes") {
+		sql := `
+        CREATE TABLE email_verification_codes (
+            id BIGSERIAL PRIMARY KEY,
+            user_email_id BIGINT NOT NULL REFERENCES user_emails(id) ON DELETE CASCADE,
+            code VARCHAR(16) NOT NULL,
+            expires_at TIMESTAMPTZ NOT NULL,
+            sent_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+            attempt_count INTEGER NOT NULL DEFAULT 0,
+            is_used BOOLEAN NOT NULL DEFAULT FALSE
+        )`
+		if err := h.db.WithContext(ctx).Exec(sql).Error; err != nil {
+			return fmt.Errorf("failed to create email_verification_codes table: %w", err)
+		}
+		logger.Info("Created table: email_verification_codes")
+	}
+
+	// 16. email_send_logs 表（按邮箱去重）
+	if !h.db.Migrator().HasTable("email_send_logs") {
+		sql := `
+        CREATE TABLE email_send_logs (
+            id BIGSERIAL PRIMARY KEY,
+            email_id BIGINT NOT NULL REFERENCES emails(id) ON DELETE CASCADE,
+            flow_id VARCHAR(128) NOT NULL,
+            timelock_standard VARCHAR(20) NOT NULL,
+            chain_id INTEGER NOT NULL,
+            contract_address VARCHAR(42) NOT NULL,
+            status_from VARCHAR(20),
+            status_to VARCHAR(20) NOT NULL,
+            tx_hash VARCHAR(66),
+            send_status VARCHAR(20) NOT NULL CHECK (send_status IN ('success','failed')),
+            error_message TEXT,
+            retry_count INTEGER NOT NULL DEFAULT 0,
+            sent_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+            UNIQUE(email_id, flow_id, status_to)
+        )`
+		if err := h.db.WithContext(ctx).Exec(sql).Error; err != nil {
+			return fmt.Errorf("failed to create email_send_logs table: %w", err)
+		}
+		logger.Info("Created table: email_send_logs")
+	}
+
 	logger.Info("All tables created successfully")
 	return nil
 }
@@ -449,83 +563,79 @@ func (h *MigrationHandler) createIndexes(ctx context.Context) error {
 	logger.Info("Creating database indexes...")
 
 	indexes := []string{
-		// 用户表索引
-		"CREATE INDEX IF NOT EXISTS idx_users_wallet_address ON users(wallet_address)",
-		"CREATE INDEX IF NOT EXISTS idx_users_chain_id ON users(chain_id)",
+		// Users
+		`CREATE INDEX IF NOT EXISTS idx_users_status ON users(status)`,
 
-		// 支持链表索引
-		"CREATE INDEX IF NOT EXISTS idx_support_chains_chain_name ON support_chains(chain_name)",
-		"CREATE INDEX IF NOT EXISTS idx_support_chains_chain_id ON support_chains(chain_id)",
-		"CREATE INDEX IF NOT EXISTS idx_support_chains_is_active ON support_chains(is_active)",
-		"CREATE INDEX IF NOT EXISTS idx_support_chains_is_testnet ON support_chains(is_testnet)",
+		// Support Chains
+		`CREATE INDEX IF NOT EXISTS idx_support_chains_chain_id ON support_chains(chain_id)`,
+		`CREATE INDEX IF NOT EXISTS idx_support_chains_active_rpc ON support_chains(is_active, rpc_enabled)`,
+		`CREATE INDEX IF NOT EXISTS idx_support_chains_testnet ON support_chains(is_testnet)`,
 
-		// 用户资产表索引
-		"CREATE INDEX IF NOT EXISTS idx_user_assets_wallet_address ON user_assets(wallet_address)",
-		"CREATE INDEX IF NOT EXISTS idx_user_assets_chain_name ON user_assets(chain_name)",
-		"CREATE INDEX IF NOT EXISTS idx_user_assets_usd_value ON user_assets(usd_value DESC)",
+		// User Assets
+		`CREATE INDEX IF NOT EXISTS idx_user_assets_wallet ON user_assets(wallet_address)`,
+		`CREATE INDEX IF NOT EXISTS idx_user_assets_chain ON user_assets(chain_name)`,
 
-		// ABI表索引
-		"CREATE INDEX IF NOT EXISTS idx_abis_owner ON abis(owner)",
-		"CREATE INDEX IF NOT EXISTS idx_abis_name ON abis(name)",
-		"CREATE INDEX IF NOT EXISTS idx_abis_is_shared ON abis(is_shared)",
-		"CREATE INDEX IF NOT EXISTS idx_abis_created_at ON abis(created_at DESC)",
+		// ABIs
+		`CREATE INDEX IF NOT EXISTS idx_abis_owner ON abis(owner)`,
+		`CREATE INDEX IF NOT EXISTS idx_abis_is_shared ON abis(is_shared)`,
 
-		// Compound timelock索引
-		"CREATE INDEX IF NOT EXISTS idx_compound_timelocks_creator_address ON compound_timelocks(creator_address)",
-		"CREATE INDEX IF NOT EXISTS idx_compound_timelocks_chain_id ON compound_timelocks(chain_id)",
-		"CREATE INDEX IF NOT EXISTS idx_compound_timelocks_chain_name ON compound_timelocks(chain_name)",
-		"CREATE INDEX IF NOT EXISTS idx_compound_timelocks_contract_address ON compound_timelocks(contract_address)",
-		"CREATE INDEX IF NOT EXISTS idx_compound_timelocks_admin ON compound_timelocks(admin)",
-		"CREATE INDEX IF NOT EXISTS idx_compound_timelocks_pending_admin ON compound_timelocks(pending_admin)",
-		"CREATE INDEX IF NOT EXISTS idx_compound_timelocks_status ON compound_timelocks(status)",
-		"CREATE INDEX IF NOT EXISTS idx_compound_timelocks_emergency_mode ON compound_timelocks(emergency_mode)",
+		// Compound Timelocks
+		`CREATE INDEX IF NOT EXISTS idx_compound_timelocks_creator ON compound_timelocks(creator_address)`,
+		`CREATE INDEX IF NOT EXISTS idx_compound_timelocks_admin ON compound_timelocks(admin)`,
+		`CREATE INDEX IF NOT EXISTS idx_compound_timelocks_pending_admin ON compound_timelocks(pending_admin)`,
+		`CREATE INDEX IF NOT EXISTS idx_compound_timelocks_status ON compound_timelocks(status)`,
+		`CREATE INDEX IF NOT EXISTS idx_compound_timelocks_chain_address ON compound_timelocks(chain_id, contract_address)`,
 
-		// OpenZeppelin timelock索引
-		"CREATE INDEX IF NOT EXISTS idx_openzeppelin_timelocks_creator_address ON openzeppelin_timelocks(creator_address)",
-		"CREATE INDEX IF NOT EXISTS idx_openzeppelin_timelocks_chain_id ON openzeppelin_timelocks(chain_id)",
-		"CREATE INDEX IF NOT EXISTS idx_openzeppelin_timelocks_chain_name ON openzeppelin_timelocks(chain_name)",
-		"CREATE INDEX IF NOT EXISTS idx_openzeppelin_timelocks_contract_address ON openzeppelin_timelocks(contract_address)",
-		"CREATE INDEX IF NOT EXISTS idx_openzeppelin_timelocks_status ON openzeppelin_timelocks(status)",
-		"CREATE INDEX IF NOT EXISTS idx_openzeppelin_timelocks_emergency_mode ON openzeppelin_timelocks(emergency_mode)",
+		// OpenZeppelin Timelocks
+		`CREATE INDEX IF NOT EXISTS idx_oz_timelocks_creator ON openzeppelin_timelocks(creator_address)`,
+		`CREATE INDEX IF NOT EXISTS idx_oz_timelocks_admin ON openzeppelin_timelocks(admin)`,
+		`CREATE INDEX IF NOT EXISTS idx_oz_timelocks_status ON openzeppelin_timelocks(status)`,
+		`CREATE INDEX IF NOT EXISTS idx_oz_timelocks_chain_address ON openzeppelin_timelocks(chain_id, contract_address)`,
 
-		// 交易记录表索引
-		"CREATE INDEX IF NOT EXISTS idx_transactions_creator_address ON transactions(creator_address)",
-		"CREATE INDEX IF NOT EXISTS idx_transactions_chain_id ON transactions(chain_id)",
-		"CREATE INDEX IF NOT EXISTS idx_transactions_timelock_address ON transactions(timelock_address)",
-		"CREATE INDEX IF NOT EXISTS idx_transactions_timelock_standard ON transactions(timelock_standard)",
-		"CREATE INDEX IF NOT EXISTS idx_transactions_tx_hash ON transactions(tx_hash)",
-		"CREATE INDEX IF NOT EXISTS idx_transactions_status ON transactions(status)",
-		"CREATE INDEX IF NOT EXISTS idx_transactions_eta ON transactions(eta)",
-		"CREATE INDEX IF NOT EXISTS idx_transactions_created_at ON transactions(created_at DESC)",
-		"CREATE INDEX IF NOT EXISTS idx_transactions_updated_at ON transactions(updated_at DESC)",
+		// Sponsors
+		`CREATE INDEX IF NOT EXISTS idx_sponsors_is_active ON sponsors(is_active)`,
 
-		// 邮件通知配置表索引
-		"CREATE INDEX IF NOT EXISTS idx_email_notifications_wallet_address ON email_notifications(wallet_address)",
-		"CREATE INDEX IF NOT EXISTS idx_email_notifications_email ON email_notifications(email)",
-		"CREATE INDEX IF NOT EXISTS idx_email_notifications_is_verified ON email_notifications(is_verified)",
-		"CREATE INDEX IF NOT EXISTS idx_email_notifications_is_active ON email_notifications(is_active)",
+		// Block Scan Progress
+		`CREATE INDEX IF NOT EXISTS idx_scan_progress_status ON block_scan_progress(scan_status)`,
+		`CREATE INDEX IF NOT EXISTS idx_scan_progress_last_update ON block_scan_progress(last_update_time)`,
 
-		// 邮件发送记录表索引
-		"CREATE INDEX IF NOT EXISTS idx_email_send_logs_email_notification_id ON email_send_logs(email_notification_id)",
-		"CREATE INDEX IF NOT EXISTS idx_email_send_logs_timelock_address ON email_send_logs(timelock_address)",
-		"CREATE INDEX IF NOT EXISTS idx_email_send_logs_transaction_hash ON email_send_logs(transaction_hash)",
-		"CREATE INDEX IF NOT EXISTS idx_email_send_logs_event_type ON email_send_logs(event_type)",
-		"CREATE INDEX IF NOT EXISTS idx_email_send_logs_is_emergency ON email_send_logs(is_emergency)",
-		"CREATE INDEX IF NOT EXISTS idx_email_send_logs_is_replied ON email_send_logs(is_replied)",
-		"CREATE INDEX IF NOT EXISTS idx_email_send_logs_send_status ON email_send_logs(send_status)",
-		"CREATE INDEX IF NOT EXISTS idx_email_send_logs_sent_at ON email_send_logs(sent_at DESC)",
+		// Compound Timelock Transactions
+		`CREATE INDEX IF NOT EXISTS idx_ctt_chain_contract ON compound_timelock_transactions(chain_id, contract_address)`,
+		`CREATE INDEX IF NOT EXISTS idx_ctt_block_number ON compound_timelock_transactions(block_number)`,
+		`CREATE INDEX IF NOT EXISTS idx_ctt_event_type ON compound_timelock_transactions(event_type)`,
+		`CREATE INDEX IF NOT EXISTS idx_ctt_tx_hash ON compound_timelock_transactions(tx_hash)`,
+		`CREATE INDEX IF NOT EXISTS idx_ctt_event_tx_hash ON compound_timelock_transactions(event_tx_hash)`,
+		`CREATE INDEX IF NOT EXISTS idx_ctt_event_value ON compound_timelock_transactions(event_value)`,
+		`CREATE INDEX IF NOT EXISTS idx_ctt_event_data_gin ON compound_timelock_transactions USING GIN (event_data)`,
 
-		// 应急通知追踪表索引
-		"CREATE INDEX IF NOT EXISTS idx_emergency_notifications_timelock_address ON emergency_notifications(timelock_address)",
-		"CREATE INDEX IF NOT EXISTS idx_emergency_notifications_transaction_hash ON emergency_notifications(transaction_hash)",
-		"CREATE INDEX IF NOT EXISTS idx_emergency_notifications_is_completed ON emergency_notifications(is_completed)",
-		"CREATE INDEX IF NOT EXISTS idx_emergency_notifications_next_send_at ON emergency_notifications(next_send_at)",
+		// OpenZeppelin Timelock Transactions
+		`CREATE INDEX IF NOT EXISTS idx_oztt_chain_contract ON openzeppelin_timelock_transactions(chain_id, contract_address)`,
+		`CREATE INDEX IF NOT EXISTS idx_oztt_block_number ON openzeppelin_timelock_transactions(block_number)`,
+		`CREATE INDEX IF NOT EXISTS idx_oztt_event_type ON openzeppelin_timelock_transactions(event_type)`,
+		`CREATE INDEX IF NOT EXISTS idx_oztt_tx_hash ON openzeppelin_timelock_transactions(tx_hash)`,
+		`CREATE INDEX IF NOT EXISTS idx_oztt_event_id ON openzeppelin_timelock_transactions(event_id)`,
+		`CREATE INDEX IF NOT EXISTS idx_oztt_event_value ON openzeppelin_timelock_transactions(event_value)`,
+		`CREATE INDEX IF NOT EXISTS idx_oztt_event_data_gin ON openzeppelin_timelock_transactions USING GIN (event_data)`,
 
-		// 赞助方表索引
-		"CREATE INDEX IF NOT EXISTS idx_sponsors_type ON sponsors(type)",
-		"CREATE INDEX IF NOT EXISTS idx_sponsors_is_active ON sponsors(is_active)",
-		"CREATE INDEX IF NOT EXISTS idx_sponsors_sort_order ON sponsors(sort_order DESC)",
-		"CREATE INDEX IF NOT EXISTS idx_sponsors_created_at ON sponsors(created_at DESC)",
+		// Timelock Transaction Flows
+		`CREATE INDEX IF NOT EXISTS idx_flows_chain_contract ON timelock_transaction_flows(chain_id, contract_address)`,
+		`CREATE INDEX IF NOT EXISTS idx_flows_standard_chain_contract ON timelock_transaction_flows(timelock_standard, chain_id, contract_address)`,
+		`CREATE INDEX IF NOT EXISTS idx_flows_status ON timelock_transaction_flows(status)`,
+		`CREATE INDEX IF NOT EXISTS idx_flows_eta ON timelock_transaction_flows(eta)`,
+		`CREATE INDEX IF NOT EXISTS idx_flows_expired_at ON timelock_transaction_flows(expired_at)`,
+		`CREATE INDEX IF NOT EXISTS idx_flows_initiator ON timelock_transaction_flows(initiator_address)`,
+
+		// Email & Notification
+		`CREATE INDEX IF NOT EXISTS idx_emails_email ON emails(email)`,
+		`CREATE INDEX IF NOT EXISTS idx_user_emails_user ON user_emails(user_id)`,
+		`CREATE INDEX IF NOT EXISTS idx_user_emails_email ON user_emails(email_id)`,
+		`CREATE INDEX IF NOT EXISTS idx_verification_codes_user_email ON email_verification_codes(user_email_id, is_used)`,
+		`CREATE INDEX IF NOT EXISTS idx_verification_codes_expires ON email_verification_codes(expires_at)`,
+		`CREATE INDEX IF NOT EXISTS idx_subs_user_email_id ON user_email_subscriptions(user_email_id)`,
+		`CREATE INDEX IF NOT EXISTS idx_subs_contract ON user_email_subscriptions(timelock_standard, chain_id, contract_address)`,
+		`CREATE INDEX IF NOT EXISTS idx_subs_notify_on_gin ON user_email_subscriptions USING GIN (notify_on jsonb_ops)`,
+		`CREATE INDEX IF NOT EXISTS idx_send_logs_flow_status ON email_send_logs(flow_id, status_to)`,
+		`CREATE INDEX IF NOT EXISTS idx_send_logs_contract ON email_send_logs(timelock_standard, chain_id, contract_address)`,
 	}
 
 	for _, indexSQL := range indexes {
@@ -826,7 +936,8 @@ func (h *MigrationHandler) insertSupportedChains(ctx context.Context) error {
 			"rpc_enabled":              true,
 		},
 		{
-			"chain_name":               "ronin-mainnet",
+			// ronin-mainnet
+			"chain_name":               "axie-mainnet",
 			"display_name":             "Ronin",
 			"chain_id":                 2020,
 			"native_currency_name":     "RON",
@@ -984,10 +1095,6 @@ func ResetDangerous(db *gorm.DB) error {
 
 	// 删除所有表（逆序删除以避免外键约束问题）
 	tables := []string{
-		"emergency_notifications",
-		"email_send_logs",
-		"email_notifications",
-		"transactions",
 		"compound_timelocks",
 		"openzeppelin_timelocks",
 		"user_assets",

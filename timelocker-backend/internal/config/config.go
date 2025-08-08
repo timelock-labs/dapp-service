@@ -20,6 +20,7 @@ type Config struct {
 	Covalent CovalentConfig `mapstructure:"covalent"`
 	RPC      RPCConfig      `mapstructure:"rpc"`
 	Email    EmailConfig    `mapstructure:"email"`
+	Scanner  ScannerConfig  `mapstructure:"scanner"`
 }
 
 type ServerConfig struct {
@@ -64,23 +65,37 @@ type RPCConfig struct {
 	Provider           string        `mapstructure:"provider"`
 	PollInterval       time.Duration `mapstructure:"poll_interval"`
 	BlockConfirmations int           `mapstructure:"block_confirmations"`
-	MaxBlockRange      int           `mapstructure:"max_block_range"` // 单次RPC请求的最大区块范围
 	IncludeTestnets    bool          `mapstructure:"include_testnets"`
 }
 
 // EmailConfig 邮件配置
 type EmailConfig struct {
-	SMTPHost                string        `mapstructure:"smtp_host"`
-	SMTPPort                int           `mapstructure:"smtp_port"`
-	SMTPUsername            string        `mapstructure:"smtp_username"`
-	SMTPPassword            string        `mapstructure:"smtp_password"`
-	FromName                string        `mapstructure:"from_name"`
-	FromEmail               string        `mapstructure:"from_email"`
-	VerificationCodeExpiry  time.Duration `mapstructure:"verification_code_expiry"`
-	EnableEmergencyMode     bool          `mapstructure:"enable_emergency_mode"`
-	EmergencyResendInterval time.Duration `mapstructure:"emergency_resend_interval"`
-	EmergencyMaxAttempts    int           `mapstructure:"emergency_max_attempts"`
-	BaseURL                 string        `mapstructure:"base_url"`
+	SMTPHost               string        `mapstructure:"smtp_host"`
+	SMTPPort               int           `mapstructure:"smtp_port"`
+	SMTPUsername           string        `mapstructure:"smtp_username"`
+	SMTPPassword           string        `mapstructure:"smtp_password"`
+	FromName               string        `mapstructure:"from_name"`
+	FromEmail              string        `mapstructure:"from_email"`
+	VerificationCodeExpiry time.Duration `mapstructure:"verification_code_expiry"`
+	EmailURL               string        `mapstructure:"email_url"`
+}
+
+// ScannerConfig 扫链配置
+type ScannerConfig struct {
+	// RPC配置
+	RPCTimeout    time.Duration `mapstructure:"rpc_timeout"`
+	RPCRetryMax   int           `mapstructure:"rpc_retry_max"`
+	RPCRetryDelay time.Duration `mapstructure:"rpc_retry_delay"`
+
+	// 扫块配置
+	ScanBatchSize     int           `mapstructure:"scan_batch_size"`
+	ScanInterval      time.Duration `mapstructure:"scan_interval"`
+	ScanIntervalSlow  time.Duration `mapstructure:"scan_interval_slow"`
+	ScanConfirmations int           `mapstructure:"scan_confirmations"`
+
+	// Flow refresher config
+	FlowRefreshInterval  time.Duration `mapstructure:"flow_refresh_interval"`
+	FlowRefreshBatchSize int           `mapstructure:"flow_refresh_batch_size"`
 }
 
 func LoadConfig() (*Config, error) {
@@ -125,10 +140,17 @@ func LoadConfig() (*Config, error) {
 	viper.SetDefault("email.from_name", "TimeLocker Notification")
 	viper.SetDefault("email.from_email", "")
 	viper.SetDefault("email.verification_code_expiry", time.Minute*10)
-	viper.SetDefault("email.enable_emergency_mode", true)
-	viper.SetDefault("email.emergency_resend_interval", time.Hour*2)
-	viper.SetDefault("email.emergency_max_attempts", 10)
-	viper.SetDefault("email.base_url", "http://localhost:8080")
+	viper.SetDefault("email.email_url", "http://localhost:8080")
+
+	// Scanner defaults
+	viper.SetDefault("scanner.rpc_timeout", time.Second*10)
+	viper.SetDefault("scanner.rpc_retry_max", 3)
+	viper.SetDefault("scanner.rpc_retry_delay", time.Second*1)
+	viper.SetDefault("scanner.scan_batch_size", 500)
+	viper.SetDefault("scanner.scan_interval", time.Second*5)
+	viper.SetDefault("scanner.scan_interval_slow", time.Second*30)
+	viper.SetDefault("scanner.scan_confirmations", 12)
+	viper.SetDefault("scanner.flow_refresh_interval", time.Second*60)
 
 	// Read environment variables
 	viper.AutomaticEnv()
