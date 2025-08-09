@@ -3343,7 +3343,7 @@ const docTemplate = `{
                 "summary": "创建或导入timelock合约记录",
                 "parameters": [
                     {
-                        "description": "创建或导入timelock合约的请求体",
+                        "description": "创建或导入timelock合约的请求体（地址从鉴权获取）",
                         "name": "request",
                         "in": "body",
                         "required": true,
@@ -3466,7 +3466,7 @@ const docTemplate = `{
                 "summary": "删除timelock合约记录",
                 "parameters": [
                     {
-                        "description": "删除请求体",
+                        "description": "删除请求体（地址从鉴权获取）",
                         "name": "request",
                         "in": "body",
                         "required": true,
@@ -3607,7 +3607,7 @@ const docTemplate = `{
                 "summary": "获取timelock合约详细信息",
                 "parameters": [
                     {
-                        "description": "获取详情的请求体",
+                        "description": "获取详情的请求体（地址从鉴权获取）",
                         "name": "request",
                         "in": "body",
                         "required": true,
@@ -3749,11 +3749,9 @@ const docTemplate = `{
                 "parameters": [
                     {
                         "type": "string",
-                        "example": "0x...",
-                        "description": "用户地址",
+                        "description": "已废弃，用户地址从鉴权获取",
                         "name": "user_address",
-                        "in": "query",
-                        "required": true
+                        "in": "query"
                     },
                     {
                         "enum": [
@@ -3874,7 +3872,7 @@ const docTemplate = `{
                 "summary": "刷新用户所有timelock合约权限",
                 "parameters": [
                     {
-                        "description": "刷新权限的请求体",
+                        "description": "刷新权限的请求体（无需携带地址）",
                         "name": "request",
                         "in": "body",
                         "required": true,
@@ -3979,7 +3977,7 @@ const docTemplate = `{
                 "summary": "更新timelock合约备注",
                 "parameters": [
                     {
-                        "description": "更新请求体",
+                        "description": "更新请求体（地址从鉴权获取）",
                         "name": "request",
                         "in": "body",
                         "required": true,
@@ -4440,9 +4438,7 @@ const docTemplate = `{
             "required": [
                 "chain_id",
                 "contract_address",
-                "is_imported",
-                "standard",
-                "user_address"
+                "standard"
             ],
             "properties": {
                 "chain_id": {
@@ -4464,9 +4460,6 @@ const docTemplate = `{
                         "compound",
                         "openzeppelin"
                     ]
-                },
-                "user_address": {
-                    "type": "string"
                 }
             }
         },
@@ -4549,8 +4542,7 @@ const docTemplate = `{
             "required": [
                 "chain_id",
                 "contract_address",
-                "standard",
-                "user_address"
+                "standard"
             ],
             "properties": {
                 "chain_id": {
@@ -4565,9 +4557,6 @@ const docTemplate = `{
                         "compound",
                         "openzeppelin"
                     ]
-                },
-                "user_address": {
-                    "type": "string"
                 }
             }
         },
@@ -4799,8 +4788,7 @@ const docTemplate = `{
             "required": [
                 "chain_id",
                 "contract_address",
-                "standard",
-                "user_address"
+                "standard"
             ],
             "properties": {
                 "chain_id": {
@@ -4815,9 +4803,6 @@ const docTemplate = `{
                         "compound",
                         "openzeppelin"
                     ]
-                },
-                "user_address": {
-                    "type": "string"
                 }
             }
         },
@@ -5169,15 +5154,7 @@ const docTemplate = `{
             }
         },
         "types.TimeLockPermissionRefreshRequest": {
-            "type": "object",
-            "required": [
-                "user_address"
-            ],
-            "properties": {
-                "user_address": {
-                    "type": "string"
-                }
-            }
+            "type": "object"
         },
         "types.UpdateABIRequest": {
             "type": "object",
@@ -5266,8 +5243,7 @@ const docTemplate = `{
             "required": [
                 "chain_id",
                 "contract_address",
-                "standard",
-                "user_address"
+                "standard"
             ],
             "properties": {
                 "chain_id": {
@@ -5286,9 +5262,6 @@ const docTemplate = `{
                         "compound",
                         "openzeppelin"
                     ]
-                },
-                "user_address": {
-                    "type": "string"
                 }
             }
         },

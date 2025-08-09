@@ -58,7 +58,7 @@ email:
   from_email: "gm@timelock.live"     # 发件人邮箱（通常与smtp_username相同）
   
   # 邮件通知功能配置
-  verification_code_expiry: "10m"        # 验证码过期时间
+  verification_code_expiry: "5m"        # 验证码过期时间
   
   # 邮件模板配置
   email_url: "http://16.163.43.186:8080"      # 前端基础URL，用于生成邮件中的链接

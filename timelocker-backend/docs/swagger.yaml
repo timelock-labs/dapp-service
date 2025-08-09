@@ -226,14 +226,10 @@ definitions:
         - compound
         - openzeppelin
         type: string
-      user_address:
-        type: string
     required:
     - chain_id
     - contract_address
-    - is_imported
     - standard
-    - user_address
     type: object
   types.CreateSponsorRequest:
     properties:
@@ -297,13 +293,10 @@ definitions:
         - compound
         - openzeppelin
         type: string
-      user_address:
-        type: string
     required:
     - chain_id
     - contract_address
     - standard
-    - user_address
     type: object
   types.EmailListResponse:
     properties:
@@ -470,13 +463,10 @@ definitions:
         - compound
         - openzeppelin
         type: string
-      user_address:
-        type: string
     required:
     - chain_id
     - contract_address
     - standard
-    - user_address
     type: object
   types.GetTimeLockDetailResponse:
     properties:
@@ -717,11 +707,6 @@ definitions:
         type: string
     type: object
   types.TimeLockPermissionRefreshRequest:
-    properties:
-      user_address:
-        type: string
-    required:
-    - user_address
     type: object
   types.UpdateABIRequest:
     properties:
@@ -791,13 +776,10 @@ definitions:
         - compound
         - openzeppelin
         type: string
-      user_address:
-        type: string
     required:
     - chain_id
     - contract_address
     - standard
-    - user_address
     type: object
   types.User:
     properties:
@@ -2855,7 +2837,7 @@ paths:
       - application/json
       description: 创建新的或导入已存在的timelock合约记录。系统会从链上读取合约数据并验证其是否为有效的timelock合约。支持Compound和OpenZeppelin两种标准。
       parameters:
-      - description: 创建或导入timelock合约的请求体
+      - description: 创建或导入timelock合约的请求体（地址从鉴权获取）
         in: body
         name: request
         required: true
@@ -2920,7 +2902,7 @@ paths:
       - application/json
       description: 软删除指定的timelock合约记录。只有合约的创建者/导入者才能删除合约记录。删除操作是软删除，数据仍保留在数据库中但标记为已删除状态。
       parameters:
-      - description: 删除请求体
+      - description: 删除请求体（地址从鉴权获取）
         in: body
         name: request
         required: true
@@ -2994,7 +2976,7 @@ paths:
       - application/json
       description: 获取指定timelock合约的完整详细信息，包括合约的基本信息、治理参数以及用户权限信息。只有具有相应权限的用户才能查看详细信息。
       parameters:
-      - description: 获取详情的请求体
+      - description: 获取详情的请求体（地址从鉴权获取）
         in: body
         name: request
         required: true
@@ -3068,11 +3050,9 @@ paths:
       - application/json
       description: 获取当前用户在所有链上有权限访问的timelock合约列表。支持按合约标准和状态进行筛选。返回的列表根据用户权限进行精细控制，只显示用户作为创建者、管理员、提议者、执行者的合约。
       parameters:
-      - description: 用户地址
-        example: 0x...
+      - description: 已废弃，用户地址从鉴权获取
         in: query
         name: user_address
-        required: true
         type: string
       - description: 按合约标准筛选
         enum:
@@ -3140,7 +3120,7 @@ paths:
       - application/json
       description: 刷新该用户在库中所有timelock合约的权限，将合约中所有角色获取一遍然后更新数据库。这个操作会从区块链上重新读取用户在各个timelock合约中的最新权限信息。
       parameters:
-      - description: 刷新权限的请求体
+      - description: 刷新权限的请求体（无需携带地址）
         in: body
         name: request
         required: true
@@ -3196,7 +3176,7 @@ paths:
       - application/json
       description: 更新指定timelock合约的备注信息。只有合约的创建者/导入者才能更新备注。备注信息用于帮助用户管理和识别不同的timelock合约。
       parameters:
-      - description: 更新请求体
+      - description: 更新请求体（地址从鉴权获取）
         in: body
         name: request
         required: true
