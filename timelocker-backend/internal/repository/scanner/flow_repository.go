@@ -302,7 +302,7 @@ func (r *flowRepository) GetCompoundQueueTransactionFunctionSignature(ctx contex
 	var tx types.CompoundTimelockTransaction
 	err := r.db.WithContext(ctx).
 		Select("event_function_signature").
-		Where("event_tx_hash = ? AND contract_address = ? AND event_type = ?", flowID, contractAddress, "QueueTransaction").
+		Where("event_tx_hash = ? AND LOWER(contract_address) = LOWER(?) AND event_type = ? AND tx_status = ?", flowID, contractAddress, "QueueTransaction", "success").
 		First(&tx).Error
 
 	if err != nil {
