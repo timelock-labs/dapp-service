@@ -241,7 +241,7 @@ func (h *MigrationHandler) createInitialTables(ctx context.Context) error {
 			is_imported BOOLEAN NOT NULL DEFAULT false,
 			created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
 			updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
-			UNIQUE(chain_id, contract_address)
+			UNIQUE(creator_address, chain_id, contract_address)
 		)`
 
 		if err := h.db.WithContext(ctx).Exec(createCompoundTimelocksTable).Error; err != nil {
@@ -268,7 +268,7 @@ func (h *MigrationHandler) createInitialTables(ctx context.Context) error {
 			is_imported BOOLEAN NOT NULL DEFAULT false,
 			created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
 			updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
-			UNIQUE(chain_id, contract_address)
+			UNIQUE(creator_address, chain_id, contract_address)
 		)`
 
 		if err := h.db.WithContext(ctx).Exec(createOpenzeppelinTimelocksTable).Error; err != nil {
@@ -528,12 +528,14 @@ func (h *MigrationHandler) createIndexes(ctx context.Context) error {
 		`CREATE INDEX IF NOT EXISTS idx_compound_timelocks_pending_admin ON compound_timelocks(pending_admin)`,
 		`CREATE INDEX IF NOT EXISTS idx_compound_timelocks_status ON compound_timelocks(status)`,
 		`CREATE INDEX IF NOT EXISTS idx_compound_timelocks_chain_address ON compound_timelocks(chain_id, contract_address)`,
+		`CREATE INDEX IF NOT EXISTS idx_compound_timelocks_creator_chain_address ON compound_timelocks(creator_address, chain_id, contract_address)`,
 
 		// OpenZeppelin Timelocks
 		`CREATE INDEX IF NOT EXISTS idx_oz_timelocks_creator ON openzeppelin_timelocks(creator_address)`,
 		`CREATE INDEX IF NOT EXISTS idx_oz_timelocks_admin ON openzeppelin_timelocks(admin)`,
 		`CREATE INDEX IF NOT EXISTS idx_oz_timelocks_status ON openzeppelin_timelocks(status)`,
 		`CREATE INDEX IF NOT EXISTS idx_oz_timelocks_chain_address ON openzeppelin_timelocks(chain_id, contract_address)`,
+		`CREATE INDEX IF NOT EXISTS idx_oz_timelocks_creator_chain_address ON openzeppelin_timelocks(creator_address, chain_id, contract_address)`,
 
 		// Sponsors
 		`CREATE INDEX IF NOT EXISTS idx_sponsors_is_active ON sponsors(is_active)`,
@@ -741,9 +743,9 @@ func (h *MigrationHandler) insertSupportedChains(ctx context.Context) error {
 			"logo_url":                 "https://raw.githubusercontent.com/timelock-labs/assets/main/chains/mode-mainnet.png",
 			"is_testnet":               false,
 			"is_active":                true,
-			"alchemy_rpc_template":     "https://mode.drpc.org",
+			"alchemy_rpc_template":     "https://mainnet.mode.network",
 			"infura_rpc_template":      "",
-			"official_rpc_urls":        `["https://mode.drpc.org", "https://mainnet.mode.network"]`,
+			"official_rpc_urls":        `["https://mainnet.mode.network", "https://mode.drpc.org"]`,
 			"block_explorer_urls":      `["https://explorer.mode.network"]`,
 			"rpc_enabled":              true,
 		},
@@ -789,9 +791,9 @@ func (h *MigrationHandler) insertSupportedChains(ctx context.Context) error {
 			"logo_url":                 "https://raw.githubusercontent.com/timelock-labs/assets/main/chains/hemi-mainnet.jpg",
 			"is_testnet":               false,
 			"is_active":                true,
-			"alchemy_rpc_template":     "https://hemi.drpc.org",
+			"alchemy_rpc_template":     "https://rpc.hemi.network/rpc",
 			"infura_rpc_template":      "",
-			"official_rpc_urls":        `["https://hemi.drpc.org", "https://rpc.hemi.network/rpc"]`,
+			"official_rpc_urls":        `["https://rpc.hemi.network/rpc", "https://hemi.drpc.org"]`,
 			"block_explorer_urls":      `["https://explorer.hemi.xyz"]`,
 			"rpc_enabled":              true,
 		},
@@ -869,28 +871,28 @@ func (h *MigrationHandler) insertSupportedChains(ctx context.Context) error {
 			"logo_url":                 "https://raw.githubusercontent.com/timelock-labs/assets/main/chains/merlin-mainnet.jpg",
 			"is_testnet":               false,
 			"is_active":                true,
-			"alchemy_rpc_template":     "https://merlin.drpc.org",
+			"alchemy_rpc_template":     "https://rpc.merlinchain.io",
 			"infura_rpc_template":      "",
-			"official_rpc_urls":        `["https://merlin.drpc.org", "https://rpc.merlinchain.io"]`,
+			"official_rpc_urls":        `["https://rpc.merlinchain.io", "https://merlin.drpc.org"]`,
 			"block_explorer_urls":      `["https://scan.merlinchain.io"]`,
 			"rpc_enabled":              true,
 		},
-		{
-			"chain_name":               "exsat-mainnet",
-			"display_name":             "exSat",
-			"chain_id":                 7200,
-			"native_currency_name":     "BTC",
-			"native_currency_symbol":   "BTC",
-			"native_currency_decimals": 18,
-			"logo_url":                 "https://raw.githubusercontent.com/timelock-labs/assets/main/chains/exsat-mainnet.jpg",
-			"is_testnet":               false,
-			"is_active":                true,
-			"alchemy_rpc_template":     "https://rpc-sg.exsat.network",
-			"infura_rpc_template":      "",
-			"official_rpc_urls":        `["https://evm.exsat.network", "https://rpc-sg.exsat.network", "https://rpc-us.exsat.network"]`,
-			"block_explorer_urls":      `["https://scan.exsat.network"]`,
-			"rpc_enabled":              true,
-		},
+		// {
+		// 	"chain_name":               "exsat-mainnet",
+		// 	"display_name":             "exSat",
+		// 	"chain_id":                 7200,
+		// 	"native_currency_name":     "BTC",
+		// 	"native_currency_symbol":   "BTC",
+		// 	"native_currency_decimals": 18,
+		// 	"logo_url":                 "https://raw.githubusercontent.com/timelock-labs/assets/main/chains/exsat-mainnet.jpg",
+		// 	"is_testnet":               false,
+		// 	"is_active":                true,
+		// 	"alchemy_rpc_template":     "https://rpc-sg.exsat.network",
+		// 	"infura_rpc_template":      "",
+		// 	"official_rpc_urls":        `["https://evm.exsat.network", "https://rpc-sg.exsat.network", "https://rpc-us.exsat.network"]`,
+		// 	"block_explorer_urls":      `["https://scan.exsat.network"]`,
+		// 	"rpc_enabled":              true,
+		// },
 		{
 			"chain_name":               "hashkey-mainnet",
 			"display_name":             "HashKey",
@@ -901,9 +903,9 @@ func (h *MigrationHandler) insertSupportedChains(ctx context.Context) error {
 			"logo_url":                 "https://raw.githubusercontent.com/timelock-labs/assets/main/chains/hashkey-mainnet.jpg",
 			"is_testnet":               false,
 			"is_active":                true,
-			"alchemy_rpc_template":     "https://hashkey.drpc.org",
+			"alchemy_rpc_template":     "https://mainnet.hsk.xyz",
 			"infura_rpc_template":      "",
-			"official_rpc_urls":        `["https://hashkey.drpc.org", "https://mainnet.hsk.xyz"]`,
+			"official_rpc_urls":        `["https://mainnet.hsk.xyz", "https://hashkey.drpc.org"]`,
 			"block_explorer_urls":      `["https://hashkey.blockscout.com"]`,
 			"rpc_enabled":              true,
 		},
