@@ -1,0 +1,2487 @@
+basePath: /
+definitions:
+  types.ABI:
+    properties:
+      abi_content:
+        description: ABI JSON内容
+        type: string
+      created_at:
+        type: string
+      description:
+        description: ABI描述
+        type: string
+      id:
+        type: integer
+      is_shared:
+        description: 是否为共享ABI
+        type: boolean
+      name:
+        description: ABI名称
+        type: string
+      owner:
+        description: 所有者地址，全0表示共享ABI
+        type: string
+      updated_at:
+        type: string
+    type: object
+  types.ABIListResponse:
+    properties:
+      abis:
+        description: 用户创建的ABI及平台共享的ABI
+        items:
+          $ref: '#/definitions/types.ABI'
+        type: array
+    type: object
+  types.ABIResponse:
+    properties:
+      abi_content:
+        type: string
+      created_at:
+        type: string
+      description:
+        type: string
+      id:
+        type: integer
+      is_shared:
+        type: boolean
+      name:
+        type: string
+      owner:
+        type: string
+      updated_at:
+        type: string
+    type: object
+  types.ABIValidationResult:
+    properties:
+      error_message:
+        type: string
+      event_count:
+        type: integer
+      function_count:
+        type: integer
+      is_valid:
+        type: boolean
+      warnings:
+        items:
+          type: string
+        type: array
+    type: object
+  types.APIError:
+    properties:
+      code:
+        type: string
+      details:
+        type: string
+      message:
+        type: string
+    type: object
+  types.APIResponse:
+    properties:
+      data: {}
+      error:
+        $ref: '#/definitions/types.APIError'
+      success:
+        type: boolean
+    type: object
+  types.CompoundFlowResponse:
+    properties:
+      call_data_hex:
+        description: 调用数据
+        type: string
+      cancel_tx_hash:
+        description: 取消交易哈希
+        type: string
+      cancelled_at:
+        description: 取消时间
+        type: string
+      chain_id:
+        description: 链ID
+        type: integer
+      contract_address:
+        description: 合约地址
+        type: string
+      contract_remark:
+        description: 合约备注
+        type: string
+      created_at:
+        description: 创建时间
+        type: string
+      eta:
+        description: 执行时间
+        type: string
+      execute_tx_hash:
+        description: 执行交易哈希
+        type: string
+      executed_at:
+        description: 执行时间
+        type: string
+      expired_at:
+        description: 过期时间
+        type: string
+      flow_id:
+        description: 流程ID
+        type: string
+      function_signature:
+        description: 函数签名
+        type: string
+      id:
+        description: ID
+        type: integer
+      initiator_address:
+        description: 发起者地址(FromAddress)
+        type: string
+      queue_tx_hash:
+        description: 排队交易哈希
+        type: string
+      status:
+        description: 状态
+        type: string
+      target_address:
+        description: 目标地址
+        type: string
+      timelock_standard:
+        description: Timelock标准
+        type: string
+      updated_at:
+        description: 更新时间
+        type: string
+      value:
+        description: 价值
+        type: string
+    type: object
+  types.CompoundTimeLockWithPermission:
+    properties:
+      admin:
+        description: 管理员地址，从链上读取
+        type: string
+      chain_id:
+        description: 所在链ID
+        type: integer
+      chain_name:
+        description: 链名称
+        type: string
+      contract_address:
+        description: 合约地址
+        type: string
+      created_at:
+        type: string
+      creator_address:
+        description: 创建者/导入者地址
+        type: string
+      delay:
+        description: 延迟时间（秒），从链上读取
+        type: integer
+      grace_period:
+        description: 宽限期（秒），从链上读取
+        type: integer
+      id:
+        type: integer
+      is_imported:
+        description: 是否导入的合约
+        type: boolean
+      maximum_delay:
+        description: 最大延迟时间（秒），从链上读取
+        type: integer
+      minimum_delay:
+        description: 最小延迟时间（秒），从链上读取
+        type: integer
+      pending_admin:
+        description: 待定管理员地址，从链上读取
+        type: string
+      remark:
+        description: 备注
+        type: string
+      status:
+        description: 状态（active, inactive, deleted）
+        type: string
+      updated_at:
+        type: string
+      user_permissions:
+        description: creator, admin, pending_admin
+        items:
+          type: string
+        type: array
+    type: object
+  types.CompoundTimelockTransactionDetail:
+    properties:
+      block_number:
+        description: 区块高度
+        type: integer
+      block_timestamp:
+        description: 区块时间
+        type: string
+      chain_id:
+        description: 链ID
+        type: integer
+      chain_name:
+        description: 链名称
+        type: string
+      contract_address:
+        description: 合约地址
+        type: string
+      event_call_data:
+        description: 事件调用参数数据
+        items:
+          type: integer
+        type: array
+      event_eta:
+        description: 事件ETA（预计执行时间）
+        type: integer
+      event_function_signature:
+        description: 事件函数签名
+        type: string
+      event_target:
+        description: 事件目标地址
+        type: string
+      event_tx_hash:
+        description: 事件交易哈希
+        type: string
+      event_value:
+        description: 事件价值
+        type: string
+      from_address:
+        description: 发起地址
+        type: string
+      to_address:
+        description: 接收地址
+        type: string
+      tx_hash:
+        description: 交易哈希
+        type: string
+      tx_status:
+        description: 交易状态（success, failed）
+        type: string
+    type: object
+  types.CreateABIRequest:
+    properties:
+      abi_content:
+        type: string
+      description:
+        maxLength: 500
+        type: string
+      name:
+        maxLength: 200
+        minLength: 1
+        type: string
+    required:
+    - abi_content
+    - name
+    type: object
+  types.CreateOrImportTimelockContractRequest:
+    properties:
+      chain_id:
+        type: integer
+      contract_address:
+        type: string
+      is_imported:
+        type: boolean
+      remark:
+        maxLength: 500
+        type: string
+      standard:
+        enum:
+        - compound
+        - openzeppelin
+        type: string
+    required:
+    - chain_id
+    - contract_address
+    - standard
+    type: object
+  types.DeleteABIRequest:
+    properties:
+      id:
+        type: integer
+    required:
+    - id
+    type: object
+  types.DeleteEmailRequest:
+    properties:
+      id:
+        type: integer
+    required:
+    - id
+    type: object
+  types.DeleteTimeLockRequest:
+    properties:
+      chain_id:
+        type: integer
+      contract_address:
+        type: string
+      standard:
+        enum:
+        - compound
+        - openzeppelin
+        type: string
+    required:
+    - chain_id
+    - contract_address
+    - standard
+    type: object
+  types.EmailListResponse:
+    properties:
+      emails:
+        items:
+          $ref: '#/definitions/types.UserEmailResponse'
+        type: array
+      total:
+        type: integer
+    type: object
+  types.FlowStatusCount:
+    properties:
+      cancelled:
+        description: 已取消
+        type: integer
+      count:
+        description: 总数
+        type: integer
+      executed:
+        description: 已执行
+        type: integer
+      expired:
+        description: 已过期
+        type: integer
+      ready:
+        description: 准备中
+        type: integer
+      waiting:
+        description: 等待中
+        type: integer
+    type: object
+  types.GetABIByIDRequest:
+    properties:
+      id:
+        type: integer
+    required:
+    - id
+    type: object
+  types.GetChainByChainIDRequest:
+    properties:
+      chain_id:
+        type: integer
+    required:
+    - chain_id
+    type: object
+  types.GetCompoundFlowListCountRequest:
+    properties:
+      standard:
+        description: 标准compound, openzeppelin
+        type: string
+    type: object
+  types.GetCompoundFlowListCountResponse:
+    properties:
+      flow_count:
+        allOf:
+        - $ref: '#/definitions/types.FlowStatusCount'
+        description: 流程数量
+    type: object
+  types.GetCompoundFlowListRequest:
+    properties:
+      page:
+        description: 页码，默认为1
+        type: integer
+      page_size:
+        description: 每页大小，默认为10，最大100
+        type: integer
+      standard:
+        description: 标准compound, openzeppelin
+        type: string
+      status:
+        description: 状态all, waiting, ready, executed, cancelled, expired
+        type: string
+    type: object
+  types.GetCompoundFlowListResponse:
+    properties:
+      flows:
+        description: 流程列表
+        items:
+          $ref: '#/definitions/types.CompoundFlowResponse'
+        type: array
+      total:
+        description: 总数
+        type: integer
+    type: object
+  types.GetEmailsRequest:
+    properties:
+      page:
+        type: integer
+      page_size:
+        type: integer
+    type: object
+  types.GetPublicSponsorsResponse:
+    properties:
+      partners:
+        items:
+          $ref: '#/definitions/types.SponsorInfo'
+        type: array
+      sponsors:
+        items:
+          $ref: '#/definitions/types.SponsorInfo'
+        type: array
+    type: object
+  types.GetSupportChainsRequest:
+    properties:
+      is_active:
+        description: 筛选激活状态
+        type: boolean
+      is_testnet:
+        description: 筛选测试网/主网
+        type: boolean
+    type: object
+  types.GetSupportChainsResponse:
+    properties:
+      chains:
+        items:
+          $ref: '#/definitions/types.SupportChainResponse'
+        type: array
+      total:
+        type: integer
+    type: object
+  types.GetTimeLockDetailRequest:
+    properties:
+      chain_id:
+        type: integer
+      contract_address:
+        type: string
+      standard:
+        enum:
+        - compound
+        - openzeppelin
+        type: string
+    required:
+    - chain_id
+    - contract_address
+    - standard
+    type: object
+  types.GetTimeLockDetailResponse:
+    properties:
+      compound_data:
+        $ref: '#/definitions/types.CompoundTimeLockWithPermission'
+      openzeppelin_data:
+        $ref: '#/definitions/types.OpenzeppelinTimeLockWithPermission'
+      standard:
+        type: string
+    type: object
+  types.GetTimeLockListRequest:
+    properties:
+      standard:
+        type: string
+      status:
+        type: string
+    type: object
+  types.GetTimeLockListResponse:
+    properties:
+      compound_timelocks:
+        items:
+          $ref: '#/definitions/types.CompoundTimeLockWithPermission'
+        type: array
+      openzeppelin_timelocks:
+        items:
+          $ref: '#/definitions/types.OpenzeppelinTimeLockWithPermission'
+        type: array
+      total:
+        type: integer
+    type: object
+  types.GetTransactionDetailRequest:
+    properties:
+      standard:
+        description: 标准
+        enum:
+        - compound
+        - openzeppelin
+        type: string
+      tx_hash:
+        description: 交易哈希
+        type: string
+    required:
+    - standard
+    - tx_hash
+    type: object
+  types.GetTransactionDetailResponse:
+    properties:
+      detail:
+        allOf:
+        - $ref: '#/definitions/types.CompoundTimelockTransactionDetail'
+        description: 交易详情
+    type: object
+  types.GetWalletChainConfigRequest:
+    properties:
+      chain_id:
+        type: integer
+    required:
+    - chain_id
+    type: object
+  types.NativeCurrencyConfig:
+    properties:
+      decimals:
+        type: integer
+      name:
+        type: string
+      symbol:
+        type: string
+    type: object
+  types.OpenzeppelinTimeLockWithPermission:
+    properties:
+      admin:
+        description: 管理员地址，从链上读取
+        type: string
+      chain_id:
+        description: 所在链ID
+        type: integer
+      chain_name:
+        description: 链名称
+        type: string
+      contract_address:
+        description: 合约地址
+        type: string
+      created_at:
+        type: string
+      creator_address:
+        description: 创建者/导入者地址
+        type: string
+      delay:
+        description: 延迟时间（秒），从链上读取
+        type: integer
+      executors:
+        description: 执行者地址列表（JSON），从链上读取
+        type: string
+      id:
+        type: integer
+      is_imported:
+        description: 是否导入的合约
+        type: boolean
+      proposers:
+        description: 提议者地址列表（JSON），从链上读取
+        type: string
+      remark:
+        description: 备注
+        type: string
+      status:
+        description: 状态（active, inactive, deleted）
+        type: string
+      updated_at:
+        type: string
+      user_permissions:
+        description: creator, proposer, executor, canceller
+        items:
+          type: string
+        type: array
+    type: object
+  types.RefreshTokenRequest:
+    properties:
+      refresh_token:
+        type: string
+    required:
+    - refresh_token
+    type: object
+  types.SendVerificationCodeRequest:
+    properties:
+      email:
+        type: string
+      remark:
+        type: string
+    type: object
+  types.SponsorInfo:
+    properties:
+      description:
+        type: string
+      id:
+        type: integer
+      link:
+        type: string
+      logo_url:
+        type: string
+      name:
+        type: string
+      sort_order:
+        type: integer
+      type:
+        $ref: '#/definitions/types.SponsorType'
+    type: object
+  types.SponsorType:
+    enum:
+    - partner
+    - sponsor
+    type: string
+    x-enum-comments:
+      SponsorTypePartner: 生态伙伴
+      SponsorTypeSponsor: 赞助方
+    x-enum-varnames:
+    - SponsorTypePartner
+    - SponsorTypeSponsor
+  types.SupportChainResponse:
+    properties:
+      alchemy_rpc_template:
+        type: string
+      block_explorer_urls:
+        description: 返回单个区块浏览器URL（取第一个），字段名保持不变以兼容前端
+        type: string
+      chain_id:
+        type: integer
+      chain_name:
+        type: string
+      display_name:
+        type: string
+      id:
+        type: integer
+      infura_rpc_template:
+        type: string
+      is_active:
+        type: boolean
+      is_testnet:
+        type: boolean
+      logo_url:
+        type: string
+      native_currency_decimals:
+        type: integer
+      native_currency_name:
+        type: string
+      native_currency_symbol:
+        type: string
+      official_rpc_urls:
+        items:
+          type: string
+        type: array
+      rpc_enabled:
+        type: boolean
+    type: object
+  types.UpdateABIWithIDRequest:
+    properties:
+      abi_content:
+        type: string
+      description:
+        maxLength: 500
+        type: string
+      id:
+        type: integer
+      name:
+        maxLength: 200
+        minLength: 1
+        type: string
+    required:
+    - abi_content
+    - id
+    - name
+    type: object
+  types.UpdateEmailRemarkWithIDRequest:
+    properties:
+      id:
+        type: integer
+      remark:
+        type: string
+    required:
+    - id
+    type: object
+  types.UpdateTimeLockRequest:
+    properties:
+      chain_id:
+        type: integer
+      contract_address:
+        type: string
+      remark:
+        maxLength: 500
+        type: string
+      standard:
+        enum:
+        - compound
+        - openzeppelin
+        type: string
+    required:
+    - chain_id
+    - contract_address
+    - standard
+    type: object
+  types.User:
+    properties:
+      created_at:
+        type: string
+      id:
+        type: integer
+      last_login:
+        type: string
+      status:
+        type: integer
+      updated_at:
+        type: string
+      wallet_address:
+        description: 钱包地址作为唯一标识
+        type: string
+    type: object
+  types.UserEmailResponse:
+    properties:
+      created_at:
+        type: string
+      email:
+        type: string
+      id:
+        type: integer
+      is_verified:
+        type: boolean
+      last_verified_at:
+        type: string
+      remark:
+        type: string
+    type: object
+  types.UserProfile:
+    properties:
+      created_at:
+        type: string
+      last_login:
+        type: string
+      wallet_address:
+        type: string
+    type: object
+  types.VerifyEmailRequest:
+    properties:
+      code:
+        type: string
+      email:
+        type: string
+    type: object
+  types.WalletChainConfig:
+    properties:
+      blockExplorerUrls:
+        type: string
+      chainId:
+        type: string
+      chainName:
+        type: string
+      nativeCurrency:
+        $ref: '#/definitions/types.NativeCurrencyConfig'
+      rpcUrls:
+        items:
+          type: string
+        type: array
+    type: object
+  types.WalletConnectRequest:
+    properties:
+      message:
+        type: string
+      signature:
+        type: string
+      wallet_address:
+        type: string
+    required:
+    - message
+    - signature
+    - wallet_address
+    type: object
+  types.WalletConnectResponse:
+    properties:
+      access_token:
+        type: string
+      expires_at:
+        type: string
+      refresh_token:
+        type: string
+      user:
+        $ref: '#/definitions/types.User'
+    type: object
+host: localhost:8080
+info:
+  contact: {}
+  description: TimeLocker Backend API
+  title: TimeLocker Backend API
+  version: "1.0"
+paths:
+  /api/v1/abi:
+    post:
+      consumes:
+      - application/json
+      description: 用户创建新的智能合约ABI。系统会验证ABI格式的正确性。每个用户在同一名称下只能创建一个ABI。名称长度1-200；描述≤500。
+      parameters:
+      - description: 创建ABI请求体
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/types.CreateABIRequest'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: ABI创建成功
+          schema:
+            allOf:
+            - $ref: '#/definitions/types.APIResponse'
+            - properties:
+                data:
+                  $ref: '#/definitions/types.ABIResponse'
+              type: object
+        "400":
+          description: 请求参数错误或ABI格式无效
+          schema:
+            allOf:
+            - $ref: '#/definitions/types.APIResponse'
+            - properties:
+                error:
+                  $ref: '#/definitions/types.APIError'
+              type: object
+        "401":
+          description: 未认证或令牌无效
+          schema:
+            allOf:
+            - $ref: '#/definitions/types.APIResponse'
+            - properties:
+                error:
+                  $ref: '#/definitions/types.APIError'
+              type: object
+        "409":
+          description: ABI名称已存在
+          schema:
+            allOf:
+            - $ref: '#/definitions/types.APIResponse'
+            - properties:
+                error:
+                  $ref: '#/definitions/types.APIError'
+              type: object
+        "422":
+          description: 参数校验失败
+          schema:
+            allOf:
+            - $ref: '#/definitions/types.APIResponse'
+            - properties:
+                error:
+                  $ref: '#/definitions/types.APIError'
+              type: object
+        "500":
+          description: 服务器内部错误
+          schema:
+            allOf:
+            - $ref: '#/definitions/types.APIResponse'
+            - properties:
+                error:
+                  $ref: '#/definitions/types.APIError'
+              type: object
+      security:
+      - BearerAuth: []
+      summary: 创建ABI
+      tags:
+      - ABI
+  /api/v1/abi/delete:
+    post:
+      consumes:
+      - application/json
+      description: 删除用户创建的ABI。用户只能删除自己创建的ABI，不能删除平台共享的ABI。删除操作是不可逆的。
+      parameters:
+      - description: 删除ABI请求体（包含ID）
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/types.DeleteABIRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: ABI删除成功
+          schema:
+            $ref: '#/definitions/types.APIResponse'
+        "400":
+          description: 无效的ABI ID
+          schema:
+            allOf:
+            - $ref: '#/definitions/types.APIResponse'
+            - properties:
+                error:
+                  $ref: '#/definitions/types.APIError'
+              type: object
+        "401":
+          description: 未认证或令牌无效
+          schema:
+            allOf:
+            - $ref: '#/definitions/types.APIResponse'
+            - properties:
+                error:
+                  $ref: '#/definitions/types.APIError'
+              type: object
+        "403":
+          description: 无权删除该ABI或尝试删除共享ABI
+          schema:
+            allOf:
+            - $ref: '#/definitions/types.APIResponse'
+            - properties:
+                error:
+                  $ref: '#/definitions/types.APIError'
+              type: object
+        "404":
+          description: ABI不存在
+          schema:
+            allOf:
+            - $ref: '#/definitions/types.APIResponse'
+            - properties:
+                error:
+                  $ref: '#/definitions/types.APIError'
+              type: object
+        "500":
+          description: 服务器内部错误
+          schema:
+            allOf:
+            - $ref: '#/definitions/types.APIResponse'
+            - properties:
+                error:
+                  $ref: '#/definitions/types.APIError'
+              type: object
+      security:
+      - BearerAuth: []
+      summary: 删除ABI
+      tags:
+      - ABI
+  /api/v1/abi/get:
+    post:
+      consumes:
+      - application/json
+      description: 根据ABI ID获取详细信息。用户只能访问自己创建的ABI或平台共享的ABI。
+      parameters:
+      - description: 获取ABI详情请求体（包含ID）
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/types.GetABIByIDRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: 获取ABI详情成功
+          schema:
+            allOf:
+            - $ref: '#/definitions/types.APIResponse'
+            - properties:
+                data:
+                  $ref: '#/definitions/types.ABIResponse'
+              type: object
+        "400":
+          description: 无效的ABI ID
+          schema:
+            allOf:
+            - $ref: '#/definitions/types.APIResponse'
+            - properties:
+                error:
+                  $ref: '#/definitions/types.APIError'
+              type: object
+        "401":
+          description: 未认证或令牌无效
+          schema:
+            allOf:
+            - $ref: '#/definitions/types.APIResponse'
+            - properties:
+                error:
+                  $ref: '#/definitions/types.APIError'
+              type: object
+        "403":
+          description: 无权访问该ABI
+          schema:
+            allOf:
+            - $ref: '#/definitions/types.APIResponse'
+            - properties:
+                error:
+                  $ref: '#/definitions/types.APIError'
+              type: object
+        "404":
+          description: ABI不存在
+          schema:
+            allOf:
+            - $ref: '#/definitions/types.APIResponse'
+            - properties:
+                error:
+                  $ref: '#/definitions/types.APIError'
+              type: object
+        "500":
+          description: 服务器内部错误
+          schema:
+            allOf:
+            - $ref: '#/definitions/types.APIResponse'
+            - properties:
+                error:
+                  $ref: '#/definitions/types.APIError'
+              type: object
+      security:
+      - BearerAuth: []
+      summary: 获取ABI详情
+      tags:
+      - ABI
+  /api/v1/abi/list:
+    post:
+      consumes:
+      - application/json
+      description: 获取用户可访问的ABI列表，包括用户自己创建的ABI和平台共享的ABI（合并在一起，利用is_shared字段区分，地址全0也表示共享ABI）。
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: 获取ABI列表成功
+          schema:
+            allOf:
+            - $ref: '#/definitions/types.APIResponse'
+            - properties:
+                data:
+                  $ref: '#/definitions/types.ABIListResponse'
+              type: object
+        "401":
+          description: 未认证或令牌无效
+          schema:
+            allOf:
+            - $ref: '#/definitions/types.APIResponse'
+            - properties:
+                error:
+                  $ref: '#/definitions/types.APIError'
+              type: object
+        "500":
+          description: 服务器内部错误
+          schema:
+            allOf:
+            - $ref: '#/definitions/types.APIResponse'
+            - properties:
+                error:
+                  $ref: '#/definitions/types.APIError'
+              type: object
+      security:
+      - BearerAuth: []
+      summary: 获取ABI列表
+      tags:
+      - ABI
+  /api/v1/abi/update:
+    post:
+      consumes:
+      - application/json
+      description: 更新用户创建的ABI。系统会重新验证ABI格式。用户只能更新自己创建的ABI。名称长度1-200；描述≤500。
+      parameters:
+      - description: 更新ABI请求体（包含ID）
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/types.UpdateABIWithIDRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: ABI更新成功
+          schema:
+            allOf:
+            - $ref: '#/definitions/types.APIResponse'
+            - properties:
+                data:
+                  $ref: '#/definitions/types.ABIResponse'
+              type: object
+        "400":
+          description: 请求参数错误或ABI格式无效
+          schema:
+            allOf:
+            - $ref: '#/definitions/types.APIResponse'
+            - properties:
+                error:
+                  $ref: '#/definitions/types.APIError'
+              type: object
+        "401":
+          description: 未认证或令牌无效
+          schema:
+            allOf:
+            - $ref: '#/definitions/types.APIResponse'
+            - properties:
+                error:
+                  $ref: '#/definitions/types.APIError'
+              type: object
+        "403":
+          description: 无权更新该ABI
+          schema:
+            allOf:
+            - $ref: '#/definitions/types.APIResponse'
+            - properties:
+                error:
+                  $ref: '#/definitions/types.APIError'
+              type: object
+        "404":
+          description: ABI不存在
+          schema:
+            allOf:
+            - $ref: '#/definitions/types.APIResponse'
+            - properties:
+                error:
+                  $ref: '#/definitions/types.APIError'
+              type: object
+        "409":
+          description: ABI名称已存在
+          schema:
+            allOf:
+            - $ref: '#/definitions/types.APIResponse'
+            - properties:
+                error:
+                  $ref: '#/definitions/types.APIError'
+              type: object
+        "422":
+          description: 参数校验失败
+          schema:
+            allOf:
+            - $ref: '#/definitions/types.APIResponse'
+            - properties:
+                error:
+                  $ref: '#/definitions/types.APIError'
+              type: object
+        "500":
+          description: 服务器内部错误
+          schema:
+            allOf:
+            - $ref: '#/definitions/types.APIResponse'
+            - properties:
+                error:
+                  $ref: '#/definitions/types.APIError'
+              type: object
+      security:
+      - BearerAuth: []
+      summary: 更新ABI
+      tags:
+      - ABI
+  /api/v1/abi/validate:
+    post:
+      consumes:
+      - application/json
+      description: 验证智能合约ABI的格式正确性，返回详细的验证结果。此接口可用于在创建或更新ABI前进行预验证。
+      parameters:
+      - description: 验证ABI请求体
+        in: body
+        name: request
+        required: true
+        schema:
+          properties:
+            abi_content:
+              type: string
+          type: object
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: ABI验证完成
+          schema:
+            allOf:
+            - $ref: '#/definitions/types.APIResponse'
+            - properties:
+                data:
+                  $ref: '#/definitions/types.ABIValidationResult'
+              type: object
+        "400":
+          description: 请求参数错误
+          schema:
+            allOf:
+            - $ref: '#/definitions/types.APIResponse'
+            - properties:
+                error:
+                  $ref: '#/definitions/types.APIError'
+              type: object
+        "401":
+          description: 未认证或令牌无效
+          schema:
+            allOf:
+            - $ref: '#/definitions/types.APIResponse'
+            - properties:
+                error:
+                  $ref: '#/definitions/types.APIError'
+              type: object
+        "422":
+          description: 参数校验失败
+          schema:
+            allOf:
+            - $ref: '#/definitions/types.APIResponse'
+            - properties:
+                error:
+                  $ref: '#/definitions/types.APIError'
+              type: object
+        "500":
+          description: 服务器内部错误
+          schema:
+            allOf:
+            - $ref: '#/definitions/types.APIResponse'
+            - properties:
+                error:
+                  $ref: '#/definitions/types.APIError'
+              type: object
+      security:
+      - BearerAuth: []
+      summary: 验证ABI格式
+      tags:
+      - ABI
+  /api/v1/auth/profile:
+    post:
+      consumes:
+      - application/json
+      description: 获取当前认证用户的详细资料信息，包括钱包地址、创建时间等。需要有效的JWT令牌。
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: 成功获取用户资料
+          schema:
+            allOf:
+            - $ref: '#/definitions/types.APIResponse'
+            - properties:
+                data:
+                  $ref: '#/definitions/types.UserProfile'
+              type: object
+        "401":
+          description: 未认证或令牌无效
+          schema:
+            allOf:
+            - $ref: '#/definitions/types.APIResponse'
+            - properties:
+                error:
+                  $ref: '#/definitions/types.APIError'
+              type: object
+        "404":
+          description: 用户不存在
+          schema:
+            allOf:
+            - $ref: '#/definitions/types.APIResponse'
+            - properties:
+                error:
+                  $ref: '#/definitions/types.APIError'
+              type: object
+        "500":
+          description: 服务器内部错误
+          schema:
+            allOf:
+            - $ref: '#/definitions/types.APIResponse'
+            - properties:
+                error:
+                  $ref: '#/definitions/types.APIError'
+              type: object
+      security:
+      - BearerAuth: []
+      summary: 获取用户资料
+      tags:
+      - Authentication
+  /api/v1/auth/refresh-token:
+    post:
+      consumes:
+      - application/json
+      description: 使用刷新令牌获取新的访问令牌。当访问令牌过期时，前端可以使用此接口通过刷新令牌重新获取新的访问令牌和刷新令牌，无需重新进行钱包签名认证。
+      parameters:
+      - description: 刷新令牌请求体
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/types.RefreshTokenRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: 刷新成功，返回新的访问令牌和刷新令牌
+          schema:
+            allOf:
+            - $ref: '#/definitions/types.APIResponse'
+            - properties:
+                data:
+                  $ref: '#/definitions/types.WalletConnectResponse'
+              type: object
+        "400":
+          description: 请求参数错误
+          schema:
+            allOf:
+            - $ref: '#/definitions/types.APIResponse'
+            - properties:
+                error:
+                  $ref: '#/definitions/types.APIError'
+              type: object
+        "401":
+          description: 刷新令牌无效或已过期
+          schema:
+            allOf:
+            - $ref: '#/definitions/types.APIResponse'
+            - properties:
+                error:
+                  $ref: '#/definitions/types.APIError'
+              type: object
+        "404":
+          description: 用户不存在
+          schema:
+            allOf:
+            - $ref: '#/definitions/types.APIResponse'
+            - properties:
+                error:
+                  $ref: '#/definitions/types.APIError'
+              type: object
+        "500":
+          description: 服务器内部错误
+          schema:
+            allOf:
+            - $ref: '#/definitions/types.APIResponse'
+            - properties:
+                error:
+                  $ref: '#/definitions/types.APIError'
+              type: object
+      summary: 刷新访问令牌
+      tags:
+      - Authentication
+  /api/v1/auth/wallet-connect:
+    post:
+      consumes:
+      - application/json
+      description: 通过钱包签名进行用户认证。前端需要先让用户用钱包对特定消息进行签名，然后将钱包地址、签名和消息发送到此接口进行验证。验证成功后返回JWT访问令牌和刷新令牌。钱包地址必须是有效以太坊地址（长度42，0x前缀）。
+      parameters:
+      - description: 钱包连接认证请求体
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/types.WalletConnectRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: 认证成功，返回访问令牌和用户信息
+          schema:
+            allOf:
+            - $ref: '#/definitions/types.APIResponse'
+            - properties:
+                data:
+                  $ref: '#/definitions/types.WalletConnectResponse'
+              type: object
+        "400":
+          description: 请求参数错误（INVALID_WALLET_ADDRESS等）
+          schema:
+            allOf:
+            - $ref: '#/definitions/types.APIResponse'
+            - properties:
+                error:
+                  $ref: '#/definitions/types.APIError'
+              type: object
+        "401":
+          description: 认证失败，可能是签名无效或地址恢复失败
+          schema:
+            allOf:
+            - $ref: '#/definitions/types.APIResponse'
+            - properties:
+                error:
+                  $ref: '#/definitions/types.APIError'
+              type: object
+        "500":
+          description: 服务器内部错误
+          schema:
+            allOf:
+            - $ref: '#/definitions/types.APIResponse'
+            - properties:
+                error:
+                  $ref: '#/definitions/types.APIError'
+              type: object
+      summary: 钱包连接认证
+      tags:
+      - Authentication
+  /api/v1/chain/chainid:
+    post:
+      consumes:
+      - application/json
+      description: 根据指定的链ID（如1代表以太坊主网）获取单个支持链的详细信息，包括链名称、原生代币、Logo等基本信息。
+      parameters:
+      - description: 按ChainID获取请求体
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/types.GetChainByChainIDRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: 成功获取链信息
+          schema:
+            allOf:
+            - $ref: '#/definitions/types.APIResponse'
+            - properties:
+                data:
+                  $ref: '#/definitions/types.SupportChainResponse'
+              type: object
+        "400":
+          description: 请求参数错误
+          schema:
+            allOf:
+            - $ref: '#/definitions/types.APIResponse'
+            - properties:
+                error:
+                  $ref: '#/definitions/types.APIError'
+              type: object
+        "404":
+          description: 链不存在
+          schema:
+            allOf:
+            - $ref: '#/definitions/types.APIResponse'
+            - properties:
+                error:
+                  $ref: '#/definitions/types.APIError'
+              type: object
+        "500":
+          description: 服务器内部错误
+          schema:
+            allOf:
+            - $ref: '#/definitions/types.APIResponse'
+            - properties:
+                error:
+                  $ref: '#/definitions/types.APIError'
+              type: object
+      summary: 根据ChainID获取链信息
+      tags:
+      - Chain
+  /api/v1/chain/list:
+    post:
+      consumes:
+      - application/json
+      description: 获取所有支持的区块链列表，可根据是否测试网和是否激活状态进行筛选。返回链的详细信息包括名称、链ID、原生代币、Logo等信息。
+      parameters:
+      - description: 筛选参数
+        in: body
+        name: request
+        schema:
+          $ref: '#/definitions/types.GetSupportChainsRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: 成功获取支持链列表
+          schema:
+            allOf:
+            - $ref: '#/definitions/types.APIResponse'
+            - properties:
+                data:
+                  $ref: '#/definitions/types.GetSupportChainsResponse'
+              type: object
+        "400":
+          description: 请求参数错误
+          schema:
+            allOf:
+            - $ref: '#/definitions/types.APIResponse'
+            - properties:
+                error:
+                  $ref: '#/definitions/types.APIError'
+              type: object
+        "500":
+          description: 服务器内部错误
+          schema:
+            allOf:
+            - $ref: '#/definitions/types.APIResponse'
+            - properties:
+                error:
+                  $ref: '#/definitions/types.APIError'
+              type: object
+      summary: 获取支持的区块链列表
+      tags:
+      - Chain
+  /api/v1/chain/wallet-config:
+    post:
+      consumes:
+      - application/json
+      description: 获取指定链ID的钱包插件配置数据，包括chainId、chainName、nativeCurrency、rpcUrls、blockExplorerUrls等信息，用于帮助用户在钱包插件中添加该链。
+      parameters:
+      - description: 获取钱包配置请求体
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/types.GetWalletChainConfigRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: 成功获取钱包配置数据
+          schema:
+            allOf:
+            - $ref: '#/definitions/types.APIResponse'
+            - properties:
+                data:
+                  $ref: '#/definitions/types.WalletChainConfig'
+              type: object
+        "400":
+          description: 请求参数错误
+          schema:
+            allOf:
+            - $ref: '#/definitions/types.APIResponse'
+            - properties:
+                error:
+                  $ref: '#/definitions/types.APIError'
+              type: object
+        "404":
+          description: 链不存在
+          schema:
+            allOf:
+            - $ref: '#/definitions/types.APIResponse'
+            - properties:
+                error:
+                  $ref: '#/definitions/types.APIError'
+              type: object
+        "500":
+          description: 服务器内部错误
+          schema:
+            allOf:
+            - $ref: '#/definitions/types.APIResponse'
+            - properties:
+                error:
+                  $ref: '#/definitions/types.APIError'
+              type: object
+      summary: 获取钱包插件添加链的配置数据
+      tags:
+      - Chain
+  /api/v1/emails:
+    post:
+      consumes:
+      - application/json
+      description: 获取当前用户的所有邮箱地址
+      parameters:
+      - description: 分页参数
+        in: body
+        name: request
+        schema:
+          $ref: '#/definitions/types.GetEmailsRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/types.APIResponse'
+            - properties:
+                data:
+                  $ref: '#/definitions/types.EmailListResponse'
+              type: object
+        "401":
+          description: 未授权
+          schema:
+            allOf:
+            - $ref: '#/definitions/types.APIResponse'
+            - properties:
+                error:
+                  $ref: '#/definitions/types.APIError'
+              type: object
+        "500":
+          description: 服务器内部错误
+          schema:
+            allOf:
+            - $ref: '#/definitions/types.APIResponse'
+            - properties:
+                error:
+                  $ref: '#/definitions/types.APIError'
+              type: object
+      security:
+      - BearerAuth: []
+      summary: 获取用户邮箱列表
+      tags:
+      - Email
+  /api/v1/emails/delete:
+    post:
+      consumes:
+      - application/json
+      description: 删除指定的邮箱地址
+      parameters:
+      - description: 删除邮箱请求（包含ID）
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/types.DeleteEmailRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/types.APIResponse'
+        "400":
+          description: 请求参数错误
+          schema:
+            allOf:
+            - $ref: '#/definitions/types.APIResponse'
+            - properties:
+                error:
+                  $ref: '#/definitions/types.APIError'
+              type: object
+        "401":
+          description: 未授权
+          schema:
+            allOf:
+            - $ref: '#/definitions/types.APIResponse'
+            - properties:
+                error:
+                  $ref: '#/definitions/types.APIError'
+              type: object
+        "403":
+          description: 无权限操作该邮箱
+          schema:
+            allOf:
+            - $ref: '#/definitions/types.APIResponse'
+            - properties:
+                error:
+                  $ref: '#/definitions/types.APIError'
+              type: object
+        "404":
+          description: 邮箱不存在
+          schema:
+            allOf:
+            - $ref: '#/definitions/types.APIResponse'
+            - properties:
+                error:
+                  $ref: '#/definitions/types.APIError'
+              type: object
+        "500":
+          description: 服务器内部错误
+          schema:
+            allOf:
+            - $ref: '#/definitions/types.APIResponse'
+            - properties:
+                error:
+                  $ref: '#/definitions/types.APIError'
+              type: object
+      security:
+      - BearerAuth: []
+      summary: 删除邮箱
+      tags:
+      - Email
+  /api/v1/emails/remark:
+    post:
+      consumes:
+      - application/json
+      description: 更新指定邮箱的备注信息
+      parameters:
+      - description: 更新备注请求（包含ID）
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/types.UpdateEmailRemarkWithIDRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/types.APIResponse'
+        "400":
+          description: 请求参数错误
+          schema:
+            allOf:
+            - $ref: '#/definitions/types.APIResponse'
+            - properties:
+                error:
+                  $ref: '#/definitions/types.APIError'
+              type: object
+        "401":
+          description: 未授权
+          schema:
+            allOf:
+            - $ref: '#/definitions/types.APIResponse'
+            - properties:
+                error:
+                  $ref: '#/definitions/types.APIError'
+              type: object
+        "403":
+          description: 无权限操作该邮箱
+          schema:
+            allOf:
+            - $ref: '#/definitions/types.APIResponse'
+            - properties:
+                error:
+                  $ref: '#/definitions/types.APIError'
+              type: object
+        "404":
+          description: 邮箱不存在
+          schema:
+            allOf:
+            - $ref: '#/definitions/types.APIResponse'
+            - properties:
+                error:
+                  $ref: '#/definitions/types.APIError'
+              type: object
+        "422":
+          description: 参数校验失败
+          schema:
+            allOf:
+            - $ref: '#/definitions/types.APIResponse'
+            - properties:
+                error:
+                  $ref: '#/definitions/types.APIError'
+              type: object
+        "500":
+          description: 服务器内部错误
+          schema:
+            allOf:
+            - $ref: '#/definitions/types.APIResponse'
+            - properties:
+                error:
+                  $ref: '#/definitions/types.APIError'
+              type: object
+      security:
+      - BearerAuth: []
+      summary: 更新邮箱备注
+      tags:
+      - Email
+  /api/v1/emails/send-verification:
+    post:
+      consumes:
+      - application/json
+      description: 基于邮箱发送验证码。后端会自动创建/复用未验证记录，并允许更新备注。email 必填，remark 最长200字符。
+      parameters:
+      - description: 发送验证码请求（email 必填，remark 可选，最长200）
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/types.SendVerificationCodeRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/types.APIResponse'
+        "400":
+          description: 请求参数错误（缺少email）
+          schema:
+            allOf:
+            - $ref: '#/definitions/types.APIResponse'
+            - properties:
+                error:
+                  $ref: '#/definitions/types.APIError'
+              type: object
+        "401":
+          description: 未授权
+          schema:
+            allOf:
+            - $ref: '#/definitions/types.APIResponse'
+            - properties:
+                error:
+                  $ref: '#/definitions/types.APIError'
+              type: object
+        "404":
+          description: 邮箱不存在
+          schema:
+            allOf:
+            - $ref: '#/definitions/types.APIResponse'
+            - properties:
+                error:
+                  $ref: '#/definitions/types.APIError'
+              type: object
+        "422":
+          description: 参数校验失败（INVALID_EMAIL_FORMAT / INVALID_REMARK）
+          schema:
+            allOf:
+            - $ref: '#/definitions/types.APIResponse'
+            - properties:
+                error:
+                  $ref: '#/definitions/types.APIError'
+              type: object
+        "429":
+          description: 发送过于频繁
+          schema:
+            allOf:
+            - $ref: '#/definitions/types.APIResponse'
+            - properties:
+                error:
+                  $ref: '#/definitions/types.APIError'
+              type: object
+        "500":
+          description: 服务器内部错误
+          schema:
+            allOf:
+            - $ref: '#/definitions/types.APIResponse'
+            - properties:
+                error:
+                  $ref: '#/definitions/types.APIError'
+              type: object
+      security:
+      - BearerAuth: []
+      summary: 发送验证码
+      tags:
+      - Email
+  /api/v1/emails/verify:
+    post:
+      consumes:
+      - application/json
+      description: 使用验证码验证邮箱地址。email 必填，code 为6位数字。
+      parameters:
+      - description: 验证邮箱请求（email+code）
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/types.VerifyEmailRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/types.APIResponse'
+        "400":
+          description: 请求参数错误
+          schema:
+            allOf:
+            - $ref: '#/definitions/types.APIResponse'
+            - properties:
+                error:
+                  $ref: '#/definitions/types.APIError'
+              type: object
+        "401":
+          description: 未授权
+          schema:
+            allOf:
+            - $ref: '#/definitions/types.APIResponse'
+            - properties:
+                error:
+                  $ref: '#/definitions/types.APIError'
+              type: object
+        "404":
+          description: 邮箱不存在
+          schema:
+            allOf:
+            - $ref: '#/definitions/types.APIResponse'
+            - properties:
+                error:
+                  $ref: '#/definitions/types.APIError'
+              type: object
+        "422":
+          description: 验证码无效或已过期 / 参数校验失败（INVALID_EMAIL_FORMAT / INVALID_CODE_FORMAT）
+          schema:
+            allOf:
+            - $ref: '#/definitions/types.APIResponse'
+            - properties:
+                error:
+                  $ref: '#/definitions/types.APIError'
+              type: object
+        "500":
+          description: 服务器内部错误
+          schema:
+            allOf:
+            - $ref: '#/definitions/types.APIResponse'
+            - properties:
+                error:
+                  $ref: '#/definitions/types.APIError'
+              type: object
+      security:
+      - BearerAuth: []
+      summary: 验证邮箱
+      tags:
+      - Email
+  /api/v1/flows/list:
+    post:
+      consumes:
+      - application/json
+      description: 获取与用户相关的timelock流程列表，包括发起的和有权限管理的
+      parameters:
+      - description: 查询参数
+        in: body
+        name: request
+        schema:
+          $ref: '#/definitions/types.GetCompoundFlowListRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/types.APIResponse'
+            - properties:
+                data:
+                  $ref: '#/definitions/types.GetCompoundFlowListResponse'
+              type: object
+        "400":
+          description: 请求参数错误
+          schema:
+            allOf:
+            - $ref: '#/definitions/types.APIResponse'
+            - properties:
+                error:
+                  $ref: '#/definitions/types.APIError'
+              type: object
+        "401":
+          description: 未认证或令牌无效
+          schema:
+            allOf:
+            - $ref: '#/definitions/types.APIResponse'
+            - properties:
+                error:
+                  $ref: '#/definitions/types.APIError'
+              type: object
+        "500":
+          description: 服务器内部错误
+          schema:
+            allOf:
+            - $ref: '#/definitions/types.APIResponse'
+            - properties:
+                error:
+                  $ref: '#/definitions/types.APIError'
+              type: object
+      security:
+      - BearerAuth: []
+      summary: 获取与用户相关的流程列表
+      tags:
+      - Flow
+  /api/v1/flows/list/count:
+    post:
+      consumes:
+      - application/json
+      description: 获取与用户相关的timelock流程数量统计，包括发起的和有权限管理的，按状态分组统计
+      parameters:
+      - description: 查询参数
+        in: body
+        name: request
+        schema:
+          $ref: '#/definitions/types.GetCompoundFlowListCountRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/types.APIResponse'
+            - properties:
+                data:
+                  $ref: '#/definitions/types.GetCompoundFlowListCountResponse'
+              type: object
+        "400":
+          description: 请求参数错误
+          schema:
+            allOf:
+            - $ref: '#/definitions/types.APIResponse'
+            - properties:
+                error:
+                  $ref: '#/definitions/types.APIError'
+              type: object
+        "401":
+          description: 未认证或令牌无效
+          schema:
+            allOf:
+            - $ref: '#/definitions/types.APIResponse'
+            - properties:
+                error:
+                  $ref: '#/definitions/types.APIError'
+              type: object
+        "500":
+          description: 服务器内部错误
+          schema:
+            allOf:
+            - $ref: '#/definitions/types.APIResponse'
+            - properties:
+                error:
+                  $ref: '#/definitions/types.APIError'
+              type: object
+      security:
+      - BearerAuth: []
+      summary: 获取与用户相关的流程数量统计
+      tags:
+      - Flow
+  /api/v1/flows/transaction/detail:
+    post:
+      consumes:
+      - application/json
+      description: 根据交易哈希和标准获取交易详情。standard 仅支持 compound/openzeppelin；tx_hash 必须为
+        0x 开头的64位十六进制。
+      parameters:
+      - description: 请求体
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/types.GetTransactionDetailRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/types.APIResponse'
+            - properties:
+                data:
+                  $ref: '#/definitions/types.GetTransactionDetailResponse'
+              type: object
+        "400":
+          description: 请求参数错误（INVALID_STANDARD / INVALID_TX_HASH）
+          schema:
+            allOf:
+            - $ref: '#/definitions/types.APIResponse'
+            - properties:
+                error:
+                  $ref: '#/definitions/types.APIError'
+              type: object
+        "404":
+          description: 交易不存在
+          schema:
+            allOf:
+            - $ref: '#/definitions/types.APIResponse'
+            - properties:
+                error:
+                  $ref: '#/definitions/types.APIError'
+              type: object
+        "500":
+          description: 服务器内部错误
+          schema:
+            allOf:
+            - $ref: '#/definitions/types.APIResponse'
+            - properties:
+                error:
+                  $ref: '#/definitions/types.APIError'
+              type: object
+      summary: 获取交易详情
+      tags:
+      - Flow
+  /api/v1/sponsors/public:
+    post:
+      consumes:
+      - application/json
+      description: 获取所有激活的赞助方和生态伙伴信息，用于在前端展示。返回的数据按照排序权重和创建时间排序。
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: 成功获取赞助方和生态伙伴列表
+          schema:
+            allOf:
+            - $ref: '#/definitions/types.APIResponse'
+            - properties:
+                data:
+                  $ref: '#/definitions/types.GetPublicSponsorsResponse'
+              type: object
+        "500":
+          description: 获取赞助方列表失败
+          schema:
+            allOf:
+            - $ref: '#/definitions/types.APIResponse'
+            - properties:
+                error:
+                  $ref: '#/definitions/types.APIError'
+              type: object
+      summary: 获取公开的赞助方和生态伙伴列表
+      tags:
+      - Sponsors
+  /api/v1/timelock/create-or-import:
+    post:
+      consumes:
+      - application/json
+      description: 创建新的或导入已存在的timelock合约记录。系统会从链上读取合约数据并验证其是否为有效的timelock合约。支持Compound和OpenZeppelin两种标准。合约地址必须为有效以太坊地址（0x
+        + 40位十六进制）。
+      parameters:
+      - description: 创建或导入timelock合约的请求体（地址从鉴权获取）
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/types.CreateOrImportTimelockContractRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: 成功创建或导入timelock合约记录
+          schema:
+            allOf:
+            - $ref: '#/definitions/types.APIResponse'
+            - properties:
+                data:
+                  type: object
+              type: object
+        "400":
+          description: 请求参数错误或标准/地址无效（INVALID_STANDARD / INVALID_CONTRACT_ADDRESS）
+          schema:
+            allOf:
+            - $ref: '#/definitions/types.APIResponse'
+            - properties:
+                error:
+                  $ref: '#/definitions/types.APIError'
+              type: object
+        "401":
+          description: 未认证或令牌无效
+          schema:
+            allOf:
+            - $ref: '#/definitions/types.APIResponse'
+            - properties:
+                error:
+                  $ref: '#/definitions/types.APIError'
+              type: object
+        "409":
+          description: timelock合约已存在
+          schema:
+            allOf:
+            - $ref: '#/definitions/types.APIResponse'
+            - properties:
+                error:
+                  $ref: '#/definitions/types.APIError'
+              type: object
+        "422":
+          description: 参数校验失败
+          schema:
+            allOf:
+            - $ref: '#/definitions/types.APIResponse'
+            - properties:
+                error:
+                  $ref: '#/definitions/types.APIError'
+              type: object
+        "500":
+          description: 服务器内部错误
+          schema:
+            allOf:
+            - $ref: '#/definitions/types.APIResponse'
+            - properties:
+                error:
+                  $ref: '#/definitions/types.APIError'
+              type: object
+      security:
+      - BearerAuth: []
+      summary: 创建或导入timelock合约记录
+      tags:
+      - Timelock
+  /api/v1/timelock/delete:
+    post:
+      consumes:
+      - application/json
+      description: 硬删除指定的timelock合约记录。只有合约的创建者/导入者才能删除合约记录。删除操作是硬删除，数据从数据库中删除。合约地址必须为有效以太坊地址（0x
+        + 40位十六进制）。
+      parameters:
+      - description: 删除请求体（地址从鉴权获取）
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/types.DeleteTimeLockRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: 成功删除timelock合约记录
+          schema:
+            allOf:
+            - $ref: '#/definitions/types.APIResponse'
+            - properties:
+                data:
+                  type: object
+              type: object
+        "400":
+          description: 请求参数错误或标准/地址无效（INVALID_STANDARD / INVALID_CONTRACT_ADDRESS）
+          schema:
+            allOf:
+            - $ref: '#/definitions/types.APIResponse'
+            - properties:
+                error:
+                  $ref: '#/definitions/types.APIError'
+              type: object
+        "401":
+          description: 未认证或令牌无效
+          schema:
+            allOf:
+            - $ref: '#/definitions/types.APIResponse'
+            - properties:
+                error:
+                  $ref: '#/definitions/types.APIError'
+              type: object
+        "403":
+          description: 无权访问此timelock合约
+          schema:
+            allOf:
+            - $ref: '#/definitions/types.APIResponse'
+            - properties:
+                error:
+                  $ref: '#/definitions/types.APIError'
+              type: object
+        "404":
+          description: timelock合约不存在
+          schema:
+            allOf:
+            - $ref: '#/definitions/types.APIResponse'
+            - properties:
+                error:
+                  $ref: '#/definitions/types.APIError'
+              type: object
+        "422":
+          description: 参数校验失败
+          schema:
+            allOf:
+            - $ref: '#/definitions/types.APIResponse'
+            - properties:
+                error:
+                  $ref: '#/definitions/types.APIError'
+              type: object
+        "500":
+          description: 服务器内部错误
+          schema:
+            allOf:
+            - $ref: '#/definitions/types.APIResponse'
+            - properties:
+                error:
+                  $ref: '#/definitions/types.APIError'
+              type: object
+      security:
+      - BearerAuth: []
+      summary: 删除timelock合约记录
+      tags:
+      - Timelock
+  /api/v1/timelock/detail:
+    post:
+      consumes:
+      - application/json
+      description: 获取指定timelock合约的完整详细信息，包括合约的基本信息、治理参数以及用户权限信息。只有具有相应权限的用户才能查看详细信息。合约地址必须为有效以太坊地址（0x
+        + 40位十六进制）。
+      parameters:
+      - description: 获取详情请求体
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/types.GetTimeLockDetailRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: 成功获取timelock合约详情
+          schema:
+            allOf:
+            - $ref: '#/definitions/types.APIResponse'
+            - properties:
+                data:
+                  $ref: '#/definitions/types.GetTimeLockDetailResponse'
+              type: object
+        "400":
+          description: 请求参数错误或标准/地址无效（INVALID_STANDARD / INVALID_CONTRACT_ADDRESS）
+          schema:
+            allOf:
+            - $ref: '#/definitions/types.APIResponse'
+            - properties:
+                error:
+                  $ref: '#/definitions/types.APIError'
+              type: object
+        "401":
+          description: 未认证或令牌无效
+          schema:
+            allOf:
+            - $ref: '#/definitions/types.APIResponse'
+            - properties:
+                error:
+                  $ref: '#/definitions/types.APIError'
+              type: object
+        "403":
+          description: 无权访问此timelock合约
+          schema:
+            allOf:
+            - $ref: '#/definitions/types.APIResponse'
+            - properties:
+                error:
+                  $ref: '#/definitions/types.APIError'
+              type: object
+        "404":
+          description: timelock合约不存在
+          schema:
+            allOf:
+            - $ref: '#/definitions/types.APIResponse'
+            - properties:
+                error:
+                  $ref: '#/definitions/types.APIError'
+              type: object
+        "422":
+          description: 参数校验失败
+          schema:
+            allOf:
+            - $ref: '#/definitions/types.APIResponse'
+            - properties:
+                error:
+                  $ref: '#/definitions/types.APIError'
+              type: object
+        "500":
+          description: 服务器内部错误
+          schema:
+            allOf:
+            - $ref: '#/definitions/types.APIResponse'
+            - properties:
+                error:
+                  $ref: '#/definitions/types.APIError'
+              type: object
+      security:
+      - BearerAuth: []
+      summary: 获取timelock合约详细信息
+      tags:
+      - Timelock
+  /api/v1/timelock/list:
+    post:
+      consumes:
+      - application/json
+      description: 获取当前用户在所有链上有权限访问的timelock合约列表。支持按合约标准和状态进行筛选。返回的列表根据用户权限进行精细控制，只显示用户作为创建者、管理员、提议者、执行者的合约。
+      parameters:
+      - description: 查询参数
+        in: body
+        name: request
+        schema:
+          $ref: '#/definitions/types.GetTimeLockListRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: 成功获取timelock合约列表
+          schema:
+            allOf:
+            - $ref: '#/definitions/types.APIResponse'
+            - properties:
+                data:
+                  $ref: '#/definitions/types.GetTimeLockListResponse'
+              type: object
+        "400":
+          description: 请求参数错误或标准无效
+          schema:
+            allOf:
+            - $ref: '#/definitions/types.APIResponse'
+            - properties:
+                error:
+                  $ref: '#/definitions/types.APIError'
+              type: object
+        "401":
+          description: 未认证或令牌无效
+          schema:
+            allOf:
+            - $ref: '#/definitions/types.APIResponse'
+            - properties:
+                error:
+                  $ref: '#/definitions/types.APIError'
+              type: object
+        "500":
+          description: 服务器内部错误
+          schema:
+            allOf:
+            - $ref: '#/definitions/types.APIResponse'
+            - properties:
+                error:
+                  $ref: '#/definitions/types.APIError'
+              type: object
+      security:
+      - BearerAuth: []
+      summary: 获取用户timelock合约列表（按权限筛选，所有链）
+      tags:
+      - Timelock
+  /api/v1/timelock/refresh-permissions:
+    post:
+      consumes:
+      - application/json
+      description: 刷新该用户在库中所有timelock合约的权限，将合约中所有角色获取一遍然后更新数据库。这个操作会从区块链上重新读取用户在各个timelock合约中的最新权限信息。
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: 成功刷新权限
+          schema:
+            allOf:
+            - $ref: '#/definitions/types.APIResponse'
+            - properties:
+                data:
+                  type: object
+              type: object
+        "401":
+          description: 未认证或令牌无效
+          schema:
+            allOf:
+            - $ref: '#/definitions/types.APIResponse'
+            - properties:
+                error:
+                  $ref: '#/definitions/types.APIError'
+              type: object
+        "500":
+          description: 服务器内部错误
+          schema:
+            allOf:
+            - $ref: '#/definitions/types.APIResponse'
+            - properties:
+                error:
+                  $ref: '#/definitions/types.APIError'
+              type: object
+      security:
+      - BearerAuth: []
+      summary: 刷新用户所有timelock合约权限
+      tags:
+      - Timelock
+  /api/v1/timelock/update:
+    post:
+      consumes:
+      - application/json
+      description: 更新指定timelock合约的备注信息。只有合约的创建者/导入者才能更新备注。备注信息用于帮助用户管理和识别不同的timelock合约。合约地址必须为有效以太坊地址（0x
+        + 40位十六进制）。
+      parameters:
+      - description: 更新请求体（地址从鉴权获取）
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/types.UpdateTimeLockRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: 成功更新timelock合约备注
+          schema:
+            allOf:
+            - $ref: '#/definitions/types.APIResponse'
+            - properties:
+                data:
+                  type: object
+              type: object
+        "400":
+          description: 请求参数错误或标准/地址无效（INVALID_STANDARD / INVALID_CONTRACT_ADDRESS）
+          schema:
+            allOf:
+            - $ref: '#/definitions/types.APIResponse'
+            - properties:
+                error:
+                  $ref: '#/definitions/types.APIError'
+              type: object
+        "401":
+          description: 未认证或令牌无效
+          schema:
+            allOf:
+            - $ref: '#/definitions/types.APIResponse'
+            - properties:
+                error:
+                  $ref: '#/definitions/types.APIError'
+              type: object
+        "403":
+          description: 无权访问此timelock合约
+          schema:
+            allOf:
+            - $ref: '#/definitions/types.APIResponse'
+            - properties:
+                error:
+                  $ref: '#/definitions/types.APIError'
+              type: object
+        "404":
+          description: timelock合约不存在
+          schema:
+            allOf:
+            - $ref: '#/definitions/types.APIResponse'
+            - properties:
+                error:
+                  $ref: '#/definitions/types.APIError'
+              type: object
+        "422":
+          description: 参数校验失败
+          schema:
+            allOf:
+            - $ref: '#/definitions/types.APIResponse'
+            - properties:
+                error:
+                  $ref: '#/definitions/types.APIError'
+              type: object
+        "500":
+          description: 服务器内部错误
+          schema:
+            allOf:
+            - $ref: '#/definitions/types.APIResponse'
+            - properties:
+                error:
+                  $ref: '#/definitions/types.APIError'
+              type: object
+      security:
+      - BearerAuth: []
+      summary: 更新timelock合约备注
+      tags:
+      - Timelock
+schemes:
+- http
+- https
+securityDefinitions:
+  BearerAuth:
+    description: Type "Bearer" followed by a space and JWT token.
+    in: header
+    name: Authorization
+    type: apiKey
+swagger: "2.0"
