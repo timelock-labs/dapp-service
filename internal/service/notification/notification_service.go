@@ -112,7 +112,7 @@ func (s *notificationService) UpdateNotificationConfig(ctx context.Context, user
 		}
 		return s.updateFeishuConfig(ctx, userAddress, req.Name, req.WebhookURL, req.Secret, req.IsActive)
 	}
-	return fmt.Errorf("invalid channel: %s", req.Channel)
+	return fmt.Errorf("invalid channel: %s", *req.Channel)
 }
 
 // DeleteNotificationConfig 删除通知配置
