@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"strings"
 	"time"
 
 	"timelocker-backend/internal/types"
@@ -41,8 +42,10 @@ func (r *repository) CreateUser(ctx context.Context, user *types.User) error {
 // GetUserByWallet 根据钱包地址获取用户
 func (r *repository) GetUserByWallet(ctx context.Context, walletAddress string) (*types.User, error) {
 	var user types.User
+	normalizedWalletAddress := strings.ToLower(walletAddress)
+
 	err := r.db.WithContext(ctx).
-		Where("wallet_address = ?", walletAddress).
+		Where("LOWER(wallet_address) = ?", normalizedWalletAddress).
 		First(&user).Error
 
 	if err != nil {
@@ -71,10 +74,11 @@ func (r *repository) GetUserByID(ctx context.Context, id int64) (*types.User, er
 // UpdateLastLogin 更新用户最后登录时间
 func (r *repository) UpdateLastLogin(ctx context.Context, walletAddress string) error {
 	now := time.Now()
+	normalizedWalletAddress := strings.ToLower(walletAddress)
 	logger.Info("UpdateLastLogin: ", "wallet_address: ", walletAddress, "last_login: ", now)
 	return r.db.WithContext(ctx).
 		Model(&types.User{}).
-		Where("wallet_address = ?", walletAddress).
+		Where("LOWER(wallet_address) = ?", normalizedWalletAddress).
 		Update("last_login", &now).Error
 }
 
@@ -99,7 +103,8 @@ func (r *repository) DeleteUser(ctx context.Context, id int64) error {
 // GetByWalletAddress 根据钱包地址获取用户（简化版本，不需要context）
 func (r *repository) GetByWalletAddress(walletAddress string) (*types.User, error) {
 	var user types.User
-	err := r.db.Where("wallet_address = ?", walletAddress).
+	normalizedWalletAddress := strings.ToLower(walletAddress)
+	err := r.db.Where("LOWER(wallet_address) = ?", normalizedWalletAddress).
 		First(&user).Error
 
 	if err != nil {

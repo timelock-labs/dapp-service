@@ -126,9 +126,9 @@ func main() {
 	abiSvc := abiService.NewService(abiRepository)
 	chainSvc := chainService.NewService(chainRepository)
 	sponsorSvc := sponsorService.NewService(sponsorRepository)
-	emailSvc := emailService.NewEmailService(emailRepository, chainRepository, cfg)
+	emailSvc := emailService.NewEmailService(emailRepository, chainRepository, timelockRepository, transactionRepository, cfg)
 	flowSvc := flowService.NewFlowService(flowRepository, timelockRepository)
-	notificationSvc := notificationService.NewNotificationService(notificationRepository, chainRepository, timelockRepository, cfg)
+	notificationSvc := notificationService.NewNotificationService(notificationRepository, chainRepository, timelockRepository, transactionRepository, cfg)
 
 	// 7. 初始化处理器
 	authHandler := authHandler.NewHandler(authSvc)

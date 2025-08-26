@@ -9,10 +9,12 @@ import (
 	"timelocker-backend/internal/config"
 	chainRepo "timelocker-backend/internal/repository/chain"
 	"timelocker-backend/internal/repository/notification"
+	"timelocker-backend/internal/repository/scanner"
 	timelockRepo "timelocker-backend/internal/repository/timelock"
 	"timelocker-backend/internal/types"
 	"timelocker-backend/pkg/logger"
 	notificationPkg "timelocker-backend/pkg/notification"
+	"timelocker-backend/pkg/utils"
 
 	"gorm.io/gorm"
 )
@@ -33,25 +35,27 @@ type NotificationService interface {
 
 // notificationService 通知服务实现
 type notificationService struct {
-	repo           notification.NotificationRepository
-	chainRepo      chainRepo.Repository
-	timelockRepo   timelockRepo.Repository
-	config         *config.Config
-	telegramSender *notificationPkg.TelegramSender
-	larkSender     *notificationPkg.LarkSender
-	feishuSender   *notificationPkg.FeishuSender
+	repo            notification.NotificationRepository
+	chainRepo       chainRepo.Repository
+	timelockRepo    timelockRepo.Repository
+	transactionRepo scanner.TransactionRepository
+	config          *config.Config
+	telegramSender  *notificationPkg.TelegramSender
+	larkSender      *notificationPkg.LarkSender
+	feishuSender    *notificationPkg.FeishuSender
 }
 
 // NewNotificationService 创建通知服务实例
-func NewNotificationService(repo notification.NotificationRepository, chainRepo chainRepo.Repository, timelockRepo timelockRepo.Repository, config *config.Config) NotificationService {
+func NewNotificationService(repo notification.NotificationRepository, chainRepo chainRepo.Repository, timelockRepo timelockRepo.Repository, transactionRepo scanner.TransactionRepository, config *config.Config) NotificationService {
 	return &notificationService{
-		repo:           repo,
-		chainRepo:      chainRepo,
-		timelockRepo:   timelockRepo,
-		config:         config,
-		telegramSender: notificationPkg.NewTelegramSender(),
-		larkSender:     notificationPkg.NewLarkSender(),
-		feishuSender:   notificationPkg.NewFeishuSender(),
+		repo:            repo,
+		chainRepo:       chainRepo,
+		timelockRepo:    timelockRepo,
+		transactionRepo: transactionRepo,
+		config:          config,
+		telegramSender:  notificationPkg.NewTelegramSender(),
+		larkSender:      notificationPkg.NewLarkSender(),
+		feishuSender:    notificationPkg.NewFeishuSender(),
 	}
 }
 
@@ -387,8 +391,111 @@ func (s *notificationService) SendFlowNotification(ctx context.Context, standard
 
 	logger.Info("Found related users for notification", "count", len(userAddresses), "standard", standard, "chainID", chainID, "contract", contractAddress)
 
+	var notificationData *types.NotificationData
+	// 获取链信息
+	chainInfo, err := s.chainRepo.GetChainByChainID(ctx, int64(chainID))
+	if err != nil {
+		logger.Error("Failed to get chain info", err, "chainID", chainID)
+		return fmt.Errorf("failed to get chain info: %w", err)
+	}
+
+	// 解析区块浏览器URLs
+	var explorerURLs []string
+	if err := json.Unmarshal([]byte(chainInfo.BlockExplorerUrls), &explorerURLs); err != nil {
+		logger.Error("Failed to parse block explorer URLs", err, "chainID", chainID)
+		explorerURLs = []string{}
+	}
+
+	// 构建交易链接
+	var txLink string
+	var txDisplay string
+	if txHash != nil && len(explorerURLs) > 0 {
+		txLink = fmt.Sprintf("%s/tx/%s", explorerURLs[0], *txHash)
+		// 简化显示的交易哈希（前10位...后6位）
+		if len(*txHash) > 10 {
+			txDisplay = fmt.Sprintf("%s...%s", (*txHash)[:10], (*txHash)[len(*txHash)-6:])
+		} else {
+			txDisplay = *txHash
+		}
+	} else {
+		txDisplay = "Pending"
+		txLink = ""
+	}
+
+	if standard == "compound" {
+		// 通过chainid、contractAddress获得该合约信息，拿到合约备注，GetCompoundTimeLockByChainAndAddress
+		compoundTimeLock, err := s.timelockRepo.GetCompoundTimeLockByChainAndAddress(ctx, chainID, contractAddress)
+		if err != nil {
+			logger.Error("Failed to get compound time lock", err, "chainID", chainID, "contractAddress", contractAddress)
+		}
+
+		// 通过flowID去交易表中拿到交易信息
+		transaction, err := s.transactionRepo.GetQueueCompoundTransactionByFlowID(ctx, flowID, contractAddress)
+		if err != nil {
+			logger.Error("Failed to get queue compound transaction", err, "flowID", flowID, "contractAddress", contractAddress)
+		}
+		if transaction == nil {
+			logger.Warn("No queue compound transaction found", "flowID", flowID, "contractAddress", contractAddress)
+			return nil // 返回nil而不是继续执行，避免后续的nil指针解引用
+		}
+
+		var functionName string
+		var calldataParams []types.CalldataParam
+		// 解析calldata
+		if transaction.EventCallData != nil && transaction.EventFunctionSignature != nil {
+			functionName = *transaction.EventFunctionSignature
+			calldataParams, err = utils.ParseCalldataNoSelector(*transaction.EventFunctionSignature, transaction.EventCallData)
+			if err != nil {
+				calldataParams = []types.CalldataParam{
+					{
+						Name:  "param[0]",
+						Type:  "CallData Does Not Match Function Signature",
+						Value: "Please Check Your Call Data",
+					},
+				}
+				logger.Error("Failed to parse calldata", err, "functionSignature", *transaction.EventFunctionSignature, "callData", transaction.EventCallData)
+			}
+		} else {
+			functionName = "No Function Call"
+			calldataParams = []types.CalldataParam{}
+		}
+
+		nativeToken := chainInfo.NativeCurrencySymbol
+		value, err := utils.WeiToEth(transaction.EventValue, nativeToken)
+		if err != nil {
+			logger.Error("Failed to convert wei to eth", err, "eventValue", transaction.EventValue)
+			value = fmt.Sprintf("0 %s", nativeToken)
+		}
+
+		notificationData = &types.NotificationData{
+			Standard:       strings.ToUpper(standard),
+			Contract:       contractAddress,
+			Remark:         compoundTimeLock.Remark,
+			Caller:         transaction.FromAddress,
+			Target:         *transaction.EventTarget,
+			Function:       functionName,
+			Value:          value,
+			CalldataParams: calldataParams,
+		}
+	} else if standard == "openzeppelin" {
+		// 拿合约信息
+		// 通过flowID去交易表中拿到交易信息
+		// 解析calldata(由于OZevent中直接是calldata带函数选择器，需要先识别functionSig，然后解析calldata)
+		// （functionSig可以新建一个functionSig表，用于存储functionSig和functionName的映射，计算用户导入的abi里的函数，然后存储到functionSig表中）
+		// 构建emailData
+	} else {
+		return fmt.Errorf("invalid standard")
+	}
+
+	notificationData.StatusFrom = strings.ToUpper(statusFrom)
+	notificationData.StatusTo = strings.ToUpper(statusTo)
+	notificationData.Network = chainInfo.DisplayName
+	notificationData.TxHash = txDisplay
+	notificationData.TxUrl = txLink
+	notificationData.DashboardUrl = s.config.Email.EmailURL
+
 	// 生成通知消息
-	message, err := s.generateNotificationMessage(ctx, standard, chainID, contractAddress, flowID, statusFrom, statusTo, txHash)
+	message, err := s.generateNotificationMessage(ctx, notificationData)
 	if err != nil {
 		logger.Error("Failed to generate notification message", err, "flowID", flowID)
 		return nil // 不阻塞流程，只记录错误
@@ -437,12 +544,7 @@ func (s *notificationService) SendFlowNotification(ctx context.Context, standard
 }
 
 // generateNotificationMessage 生成通知消息
-func (s *notificationService) generateNotificationMessage(ctx context.Context, standard string, chainID int, contractAddress string, flowID string, statusFrom, statusTo string, txHash *string) (string, error) {
-	// 获取链信息
-	chain, err := s.chainRepo.GetChainByChainID(ctx, int64(chainID))
-	if err != nil {
-		return "", fmt.Errorf("failed to get chain info: %w", err)
-	}
+func (s *notificationService) generateNotificationMessage(ctx context.Context, notificationData *types.NotificationData) (string, error) {
 
 	// 获取状态表情符号
 	getStatusEmoji := func(status string) string {
@@ -466,24 +568,22 @@ func (s *notificationService) generateNotificationMessage(ctx context.Context, s
 	message := fmt.Sprintf("━━━━━━━━━━━━━━━━\n")
 	message += fmt.Sprintf("⚡ TimeLocker Notification\n")
 	message += fmt.Sprintf("━━━━━━━━━━━━━━━━\n")
-	message += fmt.Sprintf("[%s] %s    ➡️    [%s] %s\n", strings.ToUpper(statusFrom), getStatusEmoji(statusFrom), strings.ToUpper(statusTo), getStatusEmoji(statusTo))
-	message += fmt.Sprintf("🔗 Chain    : %s\n", chain.DisplayName)
-	message += fmt.Sprintf("📄 Contract : %s\n", contractAddress)
-	message += fmt.Sprintf("⚙️ Standard : %s\n", strings.ToUpper(standard))
-
-	// 添加交易链接
-	if txHash != nil {
-		if chain.BlockExplorerUrls != "" {
-			var explorerUrls []string
-			if err := json.Unmarshal([]byte(chain.BlockExplorerUrls), &explorerUrls); err == nil && len(explorerUrls) > 0 {
-				message += fmt.Sprintf("🔍 Tx Hash  : %s", fmt.Sprintf("%s/tx/%s", explorerUrls[0], *txHash))
-			}
-		} else {
-			message += fmt.Sprintf("🔍 Tx Hash  : %s", *txHash)
-		}
+	message += fmt.Sprintf("[%s] %s    ➡️    [%s] %s\n", strings.ToUpper(notificationData.StatusFrom), getStatusEmoji(notificationData.StatusFrom), strings.ToUpper(notificationData.StatusTo), getStatusEmoji(notificationData.StatusTo))
+	message += fmt.Sprintf("🔗 Chain    : %s\n", notificationData.Network)
+	message += fmt.Sprintf("📄 Contract : %s\n", notificationData.Contract)
+	message += fmt.Sprintf("⚙️ Standard : %s\n", strings.ToUpper(notificationData.Standard))
+	message += fmt.Sprintf("💬 Remark   : %s\n", notificationData.Remark)
+	message += fmt.Sprintf("👤 Caller   : %s\n", notificationData.Caller)
+	message += fmt.Sprintf("🎯 Target   : %s\n", notificationData.Target)
+	message += fmt.Sprintf("💰 Value    : %s\n", notificationData.Value)
+	message += fmt.Sprintf("🔍 Function : %s\n", notificationData.Function)
+	for _, param := range notificationData.CalldataParams {
+		message += fmt.Sprintf("    🔒 %s(%s) : %s\n", param.Name, param.Type, param.Value)
 	}
+	message += fmt.Sprintf("🔍 Tx Hash  : %s\n", notificationData.TxHash)
+	message += fmt.Sprintf("🔗 Tx URL  : %s\n", notificationData.TxUrl)
 
-	logger.Info("Generated notification message", "flowID", flowID, "statusFrom", statusFrom, "statusTo", statusTo, "txHash", txHash)
+	logger.Info("Generated notification message", "statusFrom", notificationData.StatusFrom, "statusTo", notificationData.StatusTo, "txHash", notificationData.TxHash)
 	return message, nil
 }
 

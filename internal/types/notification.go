@@ -1,6 +1,7 @@
 package types
 
 import (
+	"html/template"
 	"time"
 )
 
@@ -146,4 +147,31 @@ type NotificationConfigListResponse struct {
 	TelegramConfigs []*TelegramConfig `json:"telegram_configs"`
 	LarkConfigs     []*LarkConfig     `json:"lark_configs"`
 	FeishuConfigs   []*FeishuConfig   `json:"feishu_configs"`
+}
+
+type CalldataParam struct {
+	Name  string `json:"name"`  // param[0],param[1]...
+	Type  string `json:"type"`  // address,bool,uint256,int256,uint64,int64,uint8,int8,string,bytes...
+	Value string `json:"value"` // 值
+}
+
+type NotificationData struct {
+	BgColorFrom    template.CSS    `json:"bg_color_from"`
+	TextColorFrom  template.CSS    `json:"text_color_from"`
+	StatusFrom     string          `json:"status_from"`
+	BgColorTo      template.CSS    `json:"bg_color_to"`
+	TextColorTo    template.CSS    `json:"text_color_to"`
+	StatusTo       string          `json:"status_to"`
+	Standard       string          `json:"standard"`
+	Network        string          `json:"network"`
+	Contract       string          `json:"contract"`
+	Remark         string          `json:"remark"`
+	Caller         string          `json:"caller"`
+	Target         string          `json:"target"`
+	Value          string          `json:"value"`
+	Function       string          `json:"function"`
+	CalldataParams []CalldataParam `json:"calldata_params"`
+	TxUrl          string          `json:"tx_url"`
+	TxHash         string          `json:"tx_hash"`
+	DashboardUrl   string          `json:"dashboard_url"`
 }
