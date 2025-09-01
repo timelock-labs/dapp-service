@@ -21,6 +21,12 @@ type Repository interface {
 	UpdateUser(ctx context.Context, user *types.User) error
 	DeleteUser(ctx context.Context, id int64) error
 	GetByWalletAddress(walletAddress string) (*types.User, error)
+
+	// Nonce相关方法
+	CreateAuthNonce(ctx context.Context, nonce *types.AuthNonce) error
+	GetAuthNonce(ctx context.Context, walletAddress string, nonce string) (*types.AuthNonce, error)
+	MarkNonceAsUsed(ctx context.Context, nonceID int64) error
+	DeleteExpiredNonces(ctx context.Context, walletAddress string) error
 }
 
 type repository struct {
@@ -117,4 +123,71 @@ func (r *repository) GetByWalletAddress(walletAddress string) (*types.User, erro
 
 	logger.Info("GetByWalletAddress: ", "user_id", user.ID, "wallet_address", user.WalletAddress)
 	return &user, nil
+}
+
+// CreateAuthNonce 创建认证nonce
+func (r *repository) CreateAuthNonce(ctx context.Context, nonce *types.AuthNonce) error {
+	logger.Info("CreateAuthNonce", "wallet_address", nonce.WalletAddress, "nonce", nonce.Nonce)
+
+	result := r.db.WithContext(ctx).Create(nonce)
+	if result.Error != nil {
+		logger.Error("Failed to create auth nonce", result.Error)
+		return result.Error
+	}
+
+	logger.Info("CreateAuthNonce success", "nonce_id", nonce.ID)
+	return nil
+}
+
+// GetAuthNonce 获取认证nonce
+func (r *repository) GetAuthNonce(ctx context.Context, walletAddress string, nonce string) (*types.AuthNonce, error) {
+	normalizedAddress := strings.ToLower(walletAddress)
+
+	var authNonce types.AuthNonce
+	result := r.db.WithContext(ctx).
+		Where("LOWER(wallet_address) = ? AND nonce = ?", normalizedAddress, nonce).
+		First(&authNonce)
+
+	if result.Error != nil {
+		return nil, result.Error
+	}
+
+	return &authNonce, nil
+}
+
+// MarkNonceAsUsed 标记nonce为已使用
+func (r *repository) MarkNonceAsUsed(ctx context.Context, nonceID int64) error {
+	logger.Info("MarkNonceAsUsed", "nonce_id", nonceID)
+
+	result := r.db.WithContext(ctx).
+		Model(&types.AuthNonce{}).
+		Where("id = ?", nonceID).
+		Update("is_used", true)
+
+	if result.Error != nil {
+		logger.Error("Failed to mark nonce as used", result.Error)
+		return result.Error
+	}
+
+	return nil
+}
+
+// DeleteExpiredNonces 删除过期的nonce
+func (r *repository) DeleteExpiredNonces(ctx context.Context, walletAddress string) error {
+	normalizedAddress := strings.ToLower(walletAddress)
+
+	result := r.db.WithContext(ctx).
+		Where("LOWER(wallet_address) = ? AND (expires_at < NOW() OR is_used = true)", normalizedAddress).
+		Delete(&types.AuthNonce{})
+
+	if result.Error != nil {
+		logger.Error("Failed to delete expired nonces", result.Error)
+		return result.Error
+	}
+
+	if result.RowsAffected > 0 {
+		logger.Info("Deleted expired nonces", "wallet_address", walletAddress, "count", result.RowsAffected)
+	}
+
+	return nil
 }

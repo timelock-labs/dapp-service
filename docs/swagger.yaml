@@ -471,6 +471,20 @@ definitions:
       page_size:
         type: integer
     type: object
+  types.GetNonceRequest:
+    properties:
+      wallet_address:
+        type: string
+    required:
+    - wallet_address
+    type: object
+  types.GetNonceResponse:
+    properties:
+      message:
+        type: string
+      nonce:
+        type: string
+    type: object
   types.GetPublicSponsorsResponse:
     properties:
       partners:
@@ -884,8 +898,17 @@ definitions:
         type: string
       id:
         type: integer
+      is_safe_wallet:
+        description: 是否为Safe钱包
+        type: boolean
       last_login:
         type: string
+      safe_owners:
+        description: Safe钱包所有者列表（JSON）
+        type: string
+      safe_threshold:
+        description: Safe钱包阈值
+        type: integer
       status:
         type: integer
       updated_at:
@@ -942,14 +965,24 @@ definitions:
     type: object
   types.WalletConnectRequest:
     properties:
+      chain_id:
+        description: Safe需要指定链ID
+        type: integer
       message:
+        type: string
+      nonce:
+        description: 后端生成的nonce
         type: string
       signature:
         type: string
       wallet_address:
         type: string
+      wallet_type:
+        description: '"eoa", "safe"'
+        type: string
     required:
     - message
+    - nonce
     - signature
     - wallet_address
     type: object
@@ -1388,6 +1421,51 @@ paths:
       summary: 验证ABI格式
       tags:
       - ABI
+  /api/v1/auth/nonce:
+    post:
+      consumes:
+      - application/json
+      description: 获取用于钱包签名认证的随机nonce。前端需要先调用此接口获取nonce和消息，然后让用户对消息进行签名，最后调用wallet-connect接口完成认证。
+      parameters:
+      - description: 获取nonce请求
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/types.GetNonceRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: 成功获取nonce和签名消息
+          schema:
+            allOf:
+            - $ref: '#/definitions/types.APIResponse'
+            - properties:
+                data:
+                  $ref: '#/definitions/types.GetNonceResponse'
+              type: object
+        "400":
+          description: 请求参数错误
+          schema:
+            allOf:
+            - $ref: '#/definitions/types.APIResponse'
+            - properties:
+                error:
+                  $ref: '#/definitions/types.APIError'
+              type: object
+        "500":
+          description: 服务器内部错误
+          schema:
+            allOf:
+            - $ref: '#/definitions/types.APIResponse'
+            - properties:
+                error:
+                  $ref: '#/definitions/types.APIError'
+              type: object
+      summary: 获取认证nonce
+      tags:
+      - Authentication
   /api/v1/auth/profile:
     post:
       consumes:
@@ -1504,9 +1582,9 @@ paths:
     post:
       consumes:
       - application/json
-      description: 通过钱包签名进行用户认证。前端需要先让用户用钱包对特定消息进行签名，然后将钱包地址、签名和消息发送到此接口进行验证。验证成功后返回JWT访问令牌和刷新令牌。钱包地址必须是有效以太坊地址（长度42，0x前缀）。
+      description: 通过钱包签名进行用户认证。流程：1.先调用/auth/nonce获取随机nonce和消息 2.让用户对消息进行签名 3.调用此接口完成认证。支持普通EOA钱包和Safe多签钱包。对于Safe钱包，需要指定wallet_type为"safe"并提供chain_id，使用EIP-1271标准验证签名。
       parameters:
-      - description: 钱包连接认证请求体
+      - description: 钱包连接认证请求体。必须包含从/auth/nonce获取的nonce。wallet_type可选值：'eoa'（默认）或'safe'。Safe钱包需要提供chain_id
         in: body
         name: request
         required: true
@@ -1534,7 +1612,7 @@ paths:
                   $ref: '#/definitions/types.APIError'
               type: object
         "401":
-          description: 认证失败，可能是签名无效或地址恢复失败
+          description: 认证失败，可能是签名无效、nonce过期或地址恢复失败
           schema:
             allOf:
             - $ref: '#/definitions/types.APIResponse'
@@ -1551,7 +1629,7 @@ paths:
                 error:
                   $ref: '#/definitions/types.APIError'
               type: object
-      summary: 钱包连接认证
+      summary: 钱包连接认证（支持EOA和Safe钱包）
       tags:
       - Authentication
   /api/v1/chain/chainid:

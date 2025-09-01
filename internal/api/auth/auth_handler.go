@@ -29,6 +29,11 @@ func (h *Handler) RegisterRoutes(router *gin.RouterGroup) {
 	// 认证API组
 	authGroup := router.Group("/auth")
 	{
+		// 获取nonce
+		// POST /api/v1/auth/nonce
+		// http://localhost:8080/api/v1/auth/nonce
+		authGroup.POST("/nonce", h.GetNonce)
+
 		// 钱包连接
 		// POST /api/v1/auth/wallet-connect
 		// http://localhost:8080/api/v1/auth/wallet-connect
@@ -46,16 +51,74 @@ func (h *Handler) RegisterRoutes(router *gin.RouterGroup) {
 	}
 }
 
-// WalletConnect 钱包连接认证
-// @Summary 钱包连接认证
-// @Description 通过钱包签名进行用户认证。前端需要先让用户用钱包对特定消息进行签名，然后将钱包地址、签名和消息发送到此接口进行验证。验证成功后返回JWT访问令牌和刷新令牌。钱包地址必须是有效以太坊地址（长度42，0x前缀）。
+// GetNonce 获取认证nonce
+// @Summary 获取认证nonce
+// @Description 获取用于钱包签名认证的随机nonce。前端需要先调用此接口获取nonce和消息，然后让用户对消息进行签名，最后调用wallet-connect接口完成认证。
 // @Tags Authentication
 // @Accept json
 // @Produce json
-// @Param request body types.WalletConnectRequest true "钱包连接认证请求体"
+// @Param request body types.GetNonceRequest true "获取nonce请求"
+// @Success 200 {object} types.APIResponse{data=types.GetNonceResponse} "成功获取nonce和签名消息"
+// @Failure 400 {object} types.APIResponse{error=types.APIError} "请求参数错误"
+// @Failure 500 {object} types.APIResponse{error=types.APIError} "服务器内部错误"
+// @Router /api/v1/auth/nonce [post]
+func (h *Handler) GetNonce(c *gin.Context) {
+	var req types.GetNonceRequest
+	if err := c.ShouldBindJSON(&req); err != nil {
+		logger.Error("GetNonce bind error", err)
+		c.JSON(http.StatusBadRequest, types.APIResponse{
+			Success: false,
+			Error: &types.APIError{
+				Code:    "INVALID_REQUEST",
+				Message: "Invalid request parameters",
+				Details: err.Error(),
+			},
+		})
+		return
+	}
+
+	response, err := h.authService.GetNonce(c.Request.Context(), &req)
+	if err != nil {
+		var statusCode int
+		var errorCode string
+
+		switch err {
+		case auth.ErrInvalidAddress:
+			statusCode = http.StatusBadRequest
+			errorCode = "INVALID_WALLET_ADDRESS"
+		default:
+			statusCode = http.StatusInternalServerError
+			errorCode = "INTERNAL_ERROR"
+		}
+
+		logger.Error("GetNonce Error: ", err, "errorCode: ", errorCode)
+		c.JSON(statusCode, types.APIResponse{
+			Success: false,
+			Error: &types.APIError{
+				Code:    errorCode,
+				Message: err.Error(),
+			},
+		})
+		return
+	}
+
+	logger.Info("GetNonce Response:", "wallet_address", req.WalletAddress)
+	c.JSON(http.StatusOK, types.APIResponse{
+		Success: true,
+		Data:    response,
+	})
+}
+
+// WalletConnect 钱包连接认证
+// @Summary 钱包连接认证（支持EOA和Safe钱包）
+// @Description 通过钱包签名进行用户认证。流程：1.先调用/auth/nonce获取随机nonce和消息 2.让用户对消息进行签名 3.调用此接口完成认证。支持普通EOA钱包和Safe多签钱包。对于Safe钱包，需要指定wallet_type为"safe"并提供chain_id，使用EIP-1271标准验证签名。
+// @Tags Authentication
+// @Accept json
+// @Produce json
+// @Param request body types.WalletConnectRequest true "钱包连接认证请求体。必须包含从/auth/nonce获取的nonce。wallet_type可选值：'eoa'（默认）或'safe'。Safe钱包需要提供chain_id"
 // @Success 200 {object} types.APIResponse{data=types.WalletConnectResponse} "认证成功，返回访问令牌和用户信息"
 // @Failure 400 {object} types.APIResponse{error=types.APIError} "请求参数错误（INVALID_WALLET_ADDRESS等）"
-// @Failure 401 {object} types.APIResponse{error=types.APIError} "认证失败，可能是签名无效或地址恢复失败"
+// @Failure 401 {object} types.APIResponse{error=types.APIError} "认证失败，可能是签名无效、nonce过期或地址恢复失败"
 // @Failure 500 {object} types.APIResponse{error=types.APIError} "服务器内部错误"
 // @Router /api/v1/auth/wallet-connect [post]
 func (h *Handler) WalletConnect(c *gin.Context) {

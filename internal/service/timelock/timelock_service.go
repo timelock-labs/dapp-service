@@ -673,46 +673,46 @@ func (s *service) readOpenzeppelinTimeLockFromChain(ctx context.Context, chainID
 	// }
 
 	data.Admin = &[]string{"0x0000000000000000000000000000000000000000"}[0]
-	data.Proposers = []string{"0x7148C25A8C78b841f771b2b2eeaD6A6220718390"}
-	data.Executors = []string{"0x7148C25A8C78b841f771b2b2eeaD6A6220718390"}
+	data.Proposers = []string{"0x0000000000000000000000000000000000000000"}
+	data.Executors = []string{"0x0000000000000000000000000000000000000000"}
 
 	return data, nil
 }
 
 // 私有方法 - 获取角色成员
-func (s *service) getRoleMembers(ctx context.Context, client *ethclient.Client, contractAddr common.Address, parsedABI abi.ABI, role common.Hash) ([]string, error) {
-	// 获取角色成员数量
-	result, err := s.callContract(ctx, client, contractAddr, parsedABI, "getRoleMemberCount", role)
-	if err != nil {
-		return nil, err
-	}
+// func (s *service) getRoleMembers(ctx context.Context, client *ethclient.Client, contractAddr common.Address, parsedABI abi.ABI, role common.Hash) ([]string, error) {
+// 	// 获取角色成员数量
+// 	result, err := s.callContract(ctx, client, contractAddr, parsedABI, "getRoleMemberCount", role)
+// 	if err != nil {
+// 		return nil, err
+// 	}
 
-	var count *big.Int
-	if len(result) > 0 {
-		if c, ok := result[0].(*big.Int); ok {
-			count = c
-		} else {
-			return nil, fmt.Errorf("invalid count type")
-		}
-	} else {
-		return []string{}, nil
-	}
+// 	var count *big.Int
+// 	if len(result) > 0 {
+// 		if c, ok := result[0].(*big.Int); ok {
+// 			count = c
+// 		} else {
+// 			return nil, fmt.Errorf("invalid count type")
+// 		}
+// 	} else {
+// 		return []string{}, nil
+// 	}
 
-	members := make([]string, 0, count.Int64())
-	for i := int64(0); i < count.Int64(); i++ {
-		result, err := s.callContract(ctx, client, contractAddr, parsedABI, "getRoleMember", role, big.NewInt(i))
-		if err != nil {
-			continue
-		}
-		if len(result) > 0 {
-			if member, ok := result[0].(common.Address); ok {
-				members = append(members, strings.ToLower(member.Hex()))
-			}
-		}
-	}
+// 	members := make([]string, 0, count.Int64())
+// 	for i := int64(0); i < count.Int64(); i++ {
+// 		result, err := s.callContract(ctx, client, contractAddr, parsedABI, "getRoleMember", role, big.NewInt(i))
+// 		if err != nil {
+// 			continue
+// 		}
+// 		if len(result) > 0 {
+// 			if member, ok := result[0].(common.Address); ok {
+// 				members = append(members, strings.ToLower(member.Hex()))
+// 			}
+// 		}
+// 	}
 
-	return members, nil
-}
+// 	return members, nil
+// }
 
 // 私有方法 - 调用合约方法
 func (s *service) callContract(ctx context.Context, client *ethclient.Client, contractAddr common.Address, parsedABI abi.ABI, method string, args ...interface{}) ([]interface{}, error) {

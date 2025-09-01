@@ -162,7 +162,10 @@ func (h *MigrationHandler) createInitialTables(ctx context.Context) error {
 			created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
 			updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
 			last_login TIMESTAMP WITH TIME ZONE,
-			status INTEGER DEFAULT 1
+			status INTEGER DEFAULT 1,
+			is_safe_wallet BOOLEAN DEFAULT FALSE,
+			safe_threshold INTEGER,
+			safe_owners TEXT
 		)`
 
 		if err := h.db.WithContext(ctx).Exec(createUsersTable).Error; err != nil {
@@ -501,6 +504,47 @@ func (h *MigrationHandler) createInitialTables(ctx context.Context) error {
 		logger.Info("Created table: email_send_logs")
 	}
 
+	// 15. safe_wallets 表
+	if !h.db.Migrator().HasTable("safe_wallets") {
+		sql := `
+        CREATE TABLE safe_wallets (
+            id BIGSERIAL PRIMARY KEY,
+            safe_address VARCHAR(42) NOT NULL,
+            chain_id INTEGER NOT NULL,
+            chain_name VARCHAR(50) NOT NULL,
+            threshold INTEGER NOT NULL,
+            owners TEXT NOT NULL,
+            version VARCHAR(20),
+            status VARCHAR(20) NOT NULL DEFAULT 'active' CHECK (status IN ('active', 'inactive')),
+            created_at TIMESTAMPTZ DEFAULT NOW(),
+            updated_at TIMESTAMPTZ DEFAULT NOW(),
+            UNIQUE(safe_address, chain_id)
+        )`
+		if err := h.db.WithContext(ctx).Exec(sql).Error; err != nil {
+			return fmt.Errorf("failed to create safe_wallets table: %w", err)
+		}
+		logger.Info("Created table: safe_wallets")
+	}
+
+	// 16. auth_nonces 表
+	if !h.db.Migrator().HasTable("auth_nonces") {
+		sql := `
+        CREATE TABLE auth_nonces (
+            id BIGSERIAL PRIMARY KEY,
+            wallet_address VARCHAR(42) NOT NULL,
+            nonce VARCHAR(128) NOT NULL,
+            message TEXT NOT NULL,
+            expires_at TIMESTAMPTZ NOT NULL,
+            is_used BOOLEAN NOT NULL DEFAULT FALSE,
+            created_at TIMESTAMPTZ DEFAULT NOW(),
+            UNIQUE(wallet_address, nonce)
+        )`
+		if err := h.db.WithContext(ctx).Exec(sql).Error; err != nil {
+			return fmt.Errorf("failed to create auth_nonces table: %w", err)
+		}
+		logger.Info("Created table: auth_nonces")
+	}
+
 	// 15. telegram_configs 表
 	if !h.db.Migrator().HasTable("telegram_configs") {
 		sql := `
@@ -665,6 +709,18 @@ func (h *MigrationHandler) createIndexes(ctx context.Context) error {
 		`CREATE INDEX IF NOT EXISTS idx_send_logs_flow_status ON email_send_logs(flow_id, status_to)`,
 		`CREATE INDEX IF NOT EXISTS idx_send_logs_contract ON email_send_logs(timelock_standard, chain_id, contract_address)`,
 
+		// Safe Wallets
+		`CREATE INDEX IF NOT EXISTS idx_safe_wallets_address ON safe_wallets(safe_address)`,
+		`CREATE INDEX IF NOT EXISTS idx_safe_wallets_chain ON safe_wallets(chain_id)`,
+		`CREATE INDEX IF NOT EXISTS idx_safe_wallets_status ON safe_wallets(status)`,
+		`CREATE INDEX IF NOT EXISTS idx_safe_wallets_address_chain ON safe_wallets(safe_address, chain_id)`,
+
+		// Auth Nonces
+		`CREATE INDEX IF NOT EXISTS idx_auth_nonces_wallet ON auth_nonces(wallet_address)`,
+		`CREATE INDEX IF NOT EXISTS idx_auth_nonces_expires ON auth_nonces(expires_at)`,
+		`CREATE INDEX IF NOT EXISTS idx_auth_nonces_used ON auth_nonces(is_used)`,
+		`CREATE INDEX IF NOT EXISTS idx_auth_nonces_wallet_nonce ON auth_nonces(wallet_address, nonce)`,
+
 		// Notification Channels
 		`CREATE INDEX IF NOT EXISTS idx_telegram_configs_user ON telegram_configs(user_address)`,
 		`CREATE INDEX IF NOT EXISTS idx_telegram_configs_active ON telegram_configs(is_active)`,
@@ -721,8 +777,8 @@ func (h *MigrationHandler) insertSupportedChains(ctx context.Context) error {
 			"logo_url":                 "https://raw.githubusercontent.com/timelock-labs/assets/main/chains/eth-mainnet.png",
 			"is_testnet":               false,
 			"is_active":                true,
-			"alchemy_rpc_template":     "https://eth-mainnet.g.alchemy.com/v2/{API_KEY}",
-			"infura_rpc_template":      "https://mainnet.infura.io/v3/{API_KEY}",
+			"alchemy_rpc_template":     "https://eth.llamarpc.com",
+			"infura_rpc_template":      "",
 			"official_rpc_urls":        `["https://ethereum.publicnode.com","https://rpc.ankr.com/eth"]`,
 			"block_explorer_urls":      `["https://etherscan.io"]`,
 			"rpc_enabled":              true,
@@ -737,8 +793,8 @@ func (h *MigrationHandler) insertSupportedChains(ctx context.Context) error {
 			"logo_url":                 "https://raw.githubusercontent.com/timelock-labs/assets/main/chains/bsc-mainnet.png",
 			"is_testnet":               false,
 			"is_active":                true,
-			"alchemy_rpc_template":     "https://bnb-mainnet.g.alchemy.com/v2/{API_KEY}",
-			"infura_rpc_template":      "https://bsc-mainnet.infura.io/v3/{API_KEY}",
+			"alchemy_rpc_template":     "https://binance.llamarpc.com",
+			"infura_rpc_template":      "",
 			"official_rpc_urls":        `["https://bsc.drpc.org", "https://bsc.blockrazor.xyz"]`,
 			"block_explorer_urls":      `["https://bscscan.com"]`,
 			"rpc_enabled":              true,
@@ -753,8 +809,8 @@ func (h *MigrationHandler) insertSupportedChains(ctx context.Context) error {
 			"logo_url":                 "https://raw.githubusercontent.com/timelock-labs/assets/main/chains/arbitrum-mainnet.png",
 			"is_testnet":               false,
 			"is_active":                true,
-			"alchemy_rpc_template":     "https://arb-mainnet.g.alchemy.com/v2/{API_KEY}",
-			"infura_rpc_template":      "https://arbitrum-mainnet.infura.io/v3/{API_KEY}",
+			"alchemy_rpc_template":     "https://arb1.arbitrum.io/rpc",
+			"infura_rpc_template":      "",
 			"official_rpc_urls":        `["https://arbitrum.drpc.org", "https://arb-pokt.nodies.app"]`,
 			"block_explorer_urls":      `["https://arbiscan.io"]`,
 			"rpc_enabled":              true,
@@ -769,8 +825,8 @@ func (h *MigrationHandler) insertSupportedChains(ctx context.Context) error {
 			"logo_url":                 "https://raw.githubusercontent.com/timelock-labs/assets/main/chains/optimism-mainnet.png",
 			"is_testnet":               false,
 			"is_active":                true,
-			"alchemy_rpc_template":     "https://opt-mainnet.g.alchemy.com/v2/{API_KEY}",
-			"infura_rpc_template":      "https://optimism-mainnet.infura.io/v3/{API_KEY}",
+			"alchemy_rpc_template":     "https://mainnet.optimism.io",
+			"infura_rpc_template":      "",
 			"official_rpc_urls":        `["https://mainnet.optimism.io","https://optimism.drpc.org"]`,
 			"block_explorer_urls":      `["https://optimistic.etherscan.io"]`,
 			"rpc_enabled":              true,
@@ -785,8 +841,8 @@ func (h *MigrationHandler) insertSupportedChains(ctx context.Context) error {
 			"logo_url":                 "https://raw.githubusercontent.com/timelock-labs/assets/main/chains/base-mainnet.png",
 			"is_testnet":               false,
 			"is_active":                true,
-			"alchemy_rpc_template":     "https://base-mainnet.g.alchemy.com/v2/{API_KEY}",
-			"infura_rpc_template":      "https://base-mainnet.infura.io/v3/{API_KEY}",
+			"alchemy_rpc_template":     "https://mainnet.base.org",
+			"infura_rpc_template":      "",
 			"official_rpc_urls":        `["https://mainnet.base.org","https://base.llamarpc.com"]`,
 			"block_explorer_urls":      `["https://basescan.org"]`,
 			"rpc_enabled":              true,
@@ -801,8 +857,8 @@ func (h *MigrationHandler) insertSupportedChains(ctx context.Context) error {
 			"logo_url":                 "https://raw.githubusercontent.com/timelock-labs/assets/main/chains/linea-mainnet.png",
 			"is_testnet":               false,
 			"is_active":                true,
-			"alchemy_rpc_template":     "https://linea-mainnet.g.alchemy.com/v2/{API_KEY}",
-			"infura_rpc_template":      "https://linea-mainnet.infura.io/v3/{API_KEY}",
+			"alchemy_rpc_template":     "https://rpc.linea.build",
+			"infura_rpc_template":      "",
 			"official_rpc_urls":        `["https://rpc.linea.build", "https://linea.drpc.org"]`,
 			"block_explorer_urls":      `["https://lineascan.build"]`,
 			"rpc_enabled":              true,
@@ -817,8 +873,8 @@ func (h *MigrationHandler) insertSupportedChains(ctx context.Context) error {
 			"logo_url":                 "https://raw.githubusercontent.com/timelock-labs/assets/main/chains/scroll-mainnet.png",
 			"is_testnet":               false,
 			"is_active":                true,
-			"alchemy_rpc_template":     "https://scroll-mainnet.g.alchemy.com/v2/{API_KEY}",
-			"infura_rpc_template":      "https://scroll-mainnet.infura.io/v3/{API_KEY}",
+			"alchemy_rpc_template":     "https://rpc.scroll.io",
+			"infura_rpc_template":      "",
 			"official_rpc_urls":        `["https://rpc.scroll.io"]`,
 			"block_explorer_urls":      `["https://scrollscan.com"]`,
 			"rpc_enabled":              true,
@@ -1045,8 +1101,8 @@ func (h *MigrationHandler) insertSupportedChains(ctx context.Context) error {
 			"logo_url":                 "https://raw.githubusercontent.com/timelock-labs/assets/main/chains/eth-sepolia.png",
 			"is_testnet":               true,
 			"is_active":                true,
-			"alchemy_rpc_template":     "https://eth-sepolia.g.alchemy.com/v2/{API_KEY}",
-			"infura_rpc_template":      "https://sepolia.infura.io/v3/{API_KEY}",
+			"alchemy_rpc_template":     "https://rpc.sepolia.ethpandaops.io",
+			"infura_rpc_template":      "",
 			"official_rpc_urls":        `["https://ethereum-sepolia-rpc.publicnode.com","https://1rpc.io/sepolia"]`,
 			"block_explorer_urls":      `["https://sepolia.etherscan.io"]`,
 			"rpc_enabled":              true,
@@ -1061,8 +1117,8 @@ func (h *MigrationHandler) insertSupportedChains(ctx context.Context) error {
 			"logo_url":                 "https://raw.githubusercontent.com/timelock-labs/assets/main/chains/bsc-testnet.png",
 			"is_testnet":               true,
 			"is_active":                true,
-			"alchemy_rpc_template":     "https://bnb-testnet.g.alchemy.com/v2/{API_KEY}",
-			"infura_rpc_template":      "https://bsc-testnet.infura.io/v3/{API_KEY}",
+			"alchemy_rpc_template":     "https://api.zan.top/bsc-testnet",
+			"infura_rpc_template":      "",
 			"official_rpc_urls":        `["https://bsc-testnet-rpc.publicnode.com","https://bsc-testnet.drpc.org"]`,
 			"block_explorer_urls":      `["https://testnet.bscscan.com"]`,
 			"rpc_enabled":              true,
