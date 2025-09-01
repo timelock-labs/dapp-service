@@ -38,28 +38,3 @@ type SafeInfo struct {
 	Nonce       int64       `json:"nonce"`     // Safe的nonce
 	Balance     string      `json:"balance"`   // Safe钱包余额
 }
-
-// GetSafeInfoRequest 获取Safe信息请求
-type GetSafeInfoRequest struct {
-	SafeAddress string `json:"safe_address" form:"safe_address" binding:"required"`
-	ChainID     int    `json:"chain_id" form:"chain_id" binding:"required"`
-}
-
-// GetSafeInfoResponse 获取Safe信息响应
-type GetSafeInfoResponse struct {
-	SafeInfo SafeInfo `json:"safe_info"`
-}
-
-// ValidateSafeAddressRequest 验证Safe地址请求
-type ValidateSafeAddressRequest struct {
-	SafeAddress string `json:"safe_address" binding:"required"`
-	ChainID     int    `json:"chain_id" binding:"required"`
-}
-
-// ValidateSafeAddressResponse 验证Safe地址响应
-type ValidateSafeAddressResponse struct {
-	IsValid  bool      `json:"is_valid"`
-	IsSafe   bool      `json:"is_safe"`
-	SafeInfo *SafeInfo `json:"safe_info,omitempty"`
-	ErrorMsg string    `json:"error_msg,omitempty"`
-}

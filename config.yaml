@@ -19,7 +19,7 @@ redis:
 jwt:
   secret: "timelocker-jwt-secret-v1"
   access_expiry: "24h"   # 24小时
-  refresh_expiry: "168h" # 7天
+  refresh_expiry: "48h" # 2天
 
 # RPC配置 - 用于监听链上事件
 rpc:

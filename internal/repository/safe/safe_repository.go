@@ -2,10 +2,7 @@ package safe
 
 import (
 	"context"
-	"encoding/json"
 	"fmt"
-	"slices"
-	"strings"
 
 	"timelocker-backend/internal/types"
 	"timelocker-backend/pkg/crypto"
@@ -21,9 +18,6 @@ type Repository interface {
 
 	// 根据地址获取Safe信息
 	GetSafeByAddress(ctx context.Context, address string, chainID int) (*types.SafeWallet, error)
-
-	// 获取用户的Safe钱包列表
-	GetSafesByUser(ctx context.Context, userAddress string) ([]*types.SafeWallet, error)
 
 	// 检查地址是否为Safe钱包
 	IsSafeAddress(ctx context.Context, address string, chainID int) (bool, error)
@@ -94,35 +88,6 @@ func (r *repository) GetSafeByAddress(ctx context.Context, address string, chain
 	return &safe, nil
 }
 
-// GetSafesByUser 获取用户的Safe钱包列表
-func (r *repository) GetSafesByUser(ctx context.Context, userAddress string) ([]*types.SafeWallet, error) {
-	logger.Info("GetSafesByUser", "user_address", userAddress)
-
-	normalizedUser := crypto.NormalizeAddress(userAddress)
-
-	var safes []*types.SafeWallet
-	// 查询owners字段包含用户地址的Safe钱包
-	result := r.db.WithContext(ctx).
-		Where("LOWER(owners) LIKE ? AND status = ?", "%"+normalizedUser+"%", "active").
-		Find(&safes)
-
-	if result.Error != nil {
-		logger.Error("Failed to get safes by user", result.Error)
-		return nil, fmt.Errorf("failed to get safes by user: %w", result.Error)
-	}
-
-	// 进一步过滤，确保用户地址完全匹配
-	var filteredSafes []*types.SafeWallet
-	for _, safe := range safes {
-		if r.isUserInSafeOwners(safe.Owners, normalizedUser) {
-			filteredSafes = append(filteredSafes, safe)
-		}
-	}
-
-	logger.Info("GetSafesByUser success", "user_address", normalizedUser, "count", len(filteredSafes))
-	return filteredSafes, nil
-}
-
 // IsSafeAddress 检查地址是否为Safe钱包
 func (r *repository) IsSafeAddress(ctx context.Context, address string, chainID int) (bool, error) {
 	normalizedAddress := crypto.NormalizeAddress(address)
@@ -185,18 +150,4 @@ func (r *repository) UpdateSafeStatus(ctx context.Context, address string, chain
 
 	logger.Info("UpdateSafeStatus success", "address", normalizedAddress, "status", status)
 	return nil
-}
-
-// isUserInSafeOwners 检查用户是否在Safe owners中
-func (r *repository) isUserInSafeOwners(ownersJSON string, userAddress string) bool {
-	// 全变成小写
-	normalizedUserAddress := crypto.NormalizeAddress(userAddress)
-	ownersJSON = strings.ToLower(ownersJSON)
-	// json解析，查看是否包含userAddress
-	var owners []string
-	err := json.Unmarshal([]byte(ownersJSON), &owners)
-	if err != nil {
-		return false
-	}
-	return slices.Contains(owners, normalizedUserAddress)
 }
