@@ -27,6 +27,7 @@ type Repository interface {
 	GetAuthNonce(ctx context.Context, walletAddress string, nonce string) (*types.AuthNonce, error)
 	MarkNonceAsUsed(ctx context.Context, nonceID int64) error
 	DeleteExpiredNonces(ctx context.Context, walletAddress string) error
+	DeleteAllNonces(ctx context.Context, walletAddress string) error
 }
 
 type repository struct {
@@ -187,6 +188,26 @@ func (r *repository) DeleteExpiredNonces(ctx context.Context, walletAddress stri
 
 	if result.RowsAffected > 0 {
 		logger.Info("Deleted expired nonces", "wallet_address", walletAddress, "count", result.RowsAffected)
+	}
+
+	return nil
+}
+
+// DeleteAllNonces 删除指定钱包地址的所有nonce（用于避免重复键冲突）
+func (r *repository) DeleteAllNonces(ctx context.Context, walletAddress string) error {
+	normalizedAddress := strings.ToLower(walletAddress)
+
+	result := r.db.WithContext(ctx).
+		Where("LOWER(wallet_address) = ?", normalizedAddress).
+		Delete(&types.AuthNonce{})
+
+	if result.Error != nil {
+		logger.Error("Failed to delete all nonces", result.Error)
+		return result.Error
+	}
+
+	if result.RowsAffected > 0 {
+		logger.Info("Deleted all nonces for wallet", "wallet_address", walletAddress, "count", result.RowsAffected)
 	}
 
 	return nil

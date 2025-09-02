@@ -81,9 +81,9 @@ func (s *service) GetNonce(ctx context.Context, req *types.GetNonceRequest) (*ty
 	// 设置过期时间（5分钟）
 	expiresAt := time.Now().Add(5 * time.Minute)
 
-	// 清理过期的nonce
-	if err := s.cleanupExpiredNonces(ctx, normalizedAddress); err != nil {
-		logger.Error("Failed to cleanup expired nonces", err)
+	// 清理该钱包地址的所有现有nonce（避免重复键冲突）
+	if err := s.cleanupAllNonces(ctx, normalizedAddress); err != nil {
+		logger.Error("Failed to cleanup existing nonces", err)
 		// 不影响主流程
 	}
 
@@ -649,7 +649,7 @@ func (s *service) validateAndUseNonce(ctx context.Context, walletAddress string,
 	return nil
 }
 
-// cleanupExpiredNonces 清理过期的nonce
-func (s *service) cleanupExpiredNonces(ctx context.Context, walletAddress string) error {
-	return s.userRepo.DeleteExpiredNonces(ctx, walletAddress)
+// cleanupAllNonces 清理指定钱包地址的所有nonce（用于避免重复键冲突）
+func (s *service) cleanupAllNonces(ctx context.Context, walletAddress string) error {
+	return s.userRepo.DeleteAllNonces(ctx, walletAddress)
 }
