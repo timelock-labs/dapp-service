@@ -2430,7 +2430,7 @@ const docTemplate = `{
         },
         "/api/v1/notifications/configs": {
             "post": {
-                "description": "获取当前用户的所有通知渠道配置",
+                "description": "获取当前用户的所有通知渠道配置，如果用户没有任何配置则返回空列表",
                 "consumes": [
                     "application/json"
                 ],
@@ -2443,7 +2443,7 @@ const docTemplate = `{
                 "summary": "获取所有通知配置",
                 "responses": {
                     "200": {
-                        "description": "获取成功",
+                        "description": "获取成功，返回所有配置或空列表",
                         "schema": {
                             "allOf": [
                                 {
@@ -2461,7 +2461,7 @@ const docTemplate = `{
                         }
                     },
                     "401": {
-                        "description": "未认证",
+                        "description": "未认证 - UNAUTHORIZED: 用户未认证",
                         "schema": {
                             "allOf": [
                                 {
@@ -2479,7 +2479,7 @@ const docTemplate = `{
                         }
                     },
                     "500": {
-                        "description": "服务器内部错误",
+                        "description": "服务器内部错误 - INTERNAL_ERROR: 获取配置失败; DATABASE_ERROR: 数据库访问失败",
                         "schema": {
                             "allOf": [
                                 {
@@ -2535,7 +2535,7 @@ const docTemplate = `{
                                     "type": "object",
                                     "properties": {
                                         "data": {
-                                            "$ref": "#/definitions/types.NotificationConfig"
+                                            "type": "object"
                                         }
                                     }
                                 }
@@ -2543,7 +2543,7 @@ const docTemplate = `{
                         }
                     },
                     "400": {
-                        "description": "请求参数错误",
+                        "description": "请求参数错误 - INVALID_REQUEST: 请求参数格式错误; INVALID_NAME: 名称不能为空; INVALID_CHANNEL: 无效的通知渠道; MISSING_TELEGRAM_FIELDS: 缺少telegram必填字段; MISSING_WEBHOOK_URL: 缺少webhook_url字段; MISSING_REQUIRED_FIELDS: 缺少必填字段",
                         "schema": {
                             "allOf": [
                                 {
@@ -2561,7 +2561,7 @@ const docTemplate = `{
                         }
                     },
                     "401": {
-                        "description": "未认证",
+                        "description": "未认证 - UNAUTHORIZED: 用户未认证",
                         "schema": {
                             "allOf": [
                                 {
@@ -2579,7 +2579,7 @@ const docTemplate = `{
                         }
                     },
                     "409": {
-                        "description": "配置名称已存在",
+                        "description": "配置冲突 - CONFIG_ALREADY_EXISTS: 同名配置已存在",
                         "schema": {
                             "allOf": [
                                 {
@@ -2597,7 +2597,7 @@ const docTemplate = `{
                         }
                     },
                     "500": {
-                        "description": "服务器内部错误",
+                        "description": "服务器内部错误 - INTERNAL_ERROR: 创建配置失败",
                         "schema": {
                             "allOf": [
                                 {
@@ -2645,11 +2645,23 @@ const docTemplate = `{
                     "200": {
                         "description": "删除成功",
                         "schema": {
-                            "$ref": "#/definitions/types.APIResponse"
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/types.APIResponse"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "type": "object"
+                                        }
+                                    }
+                                }
+                            ]
                         }
                     },
                     "400": {
-                        "description": "请求参数错误",
+                        "description": "请求参数错误 - INVALID_REQUEST: 请求参数格式错误; INVALID_NAME: 名称不能为空; INVALID_CHANNEL: 无效的通知渠道",
                         "schema": {
                             "allOf": [
                                 {
@@ -2667,7 +2679,7 @@ const docTemplate = `{
                         }
                     },
                     "401": {
-                        "description": "未认证",
+                        "description": "未认证 - UNAUTHORIZED: 用户未认证",
                         "schema": {
                             "allOf": [
                                 {
@@ -2685,7 +2697,7 @@ const docTemplate = `{
                         }
                     },
                     "404": {
-                        "description": "配置不存在",
+                        "description": "配置不存在 - CONFIG_NOT_FOUND: 指定的通知配置不存在",
                         "schema": {
                             "allOf": [
                                 {
@@ -2703,7 +2715,7 @@ const docTemplate = `{
                         }
                     },
                     "500": {
-                        "description": "服务器内部错误",
+                        "description": "服务器内部错误 - INTERNAL_ERROR: 删除配置失败",
                         "schema": {
                             "allOf": [
                                 {
@@ -2751,11 +2763,23 @@ const docTemplate = `{
                     "200": {
                         "description": "更新成功",
                         "schema": {
-                            "$ref": "#/definitions/types.APIResponse"
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/types.APIResponse"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "type": "object"
+                                        }
+                                    }
+                                }
+                            ]
                         }
                     },
                     "400": {
-                        "description": "请求参数错误",
+                        "description": "请求参数错误 - INVALID_REQUEST: 请求参数格式错误; INVALID_NAME: 名称不能为空; INVALID_CHANNEL: 无效的通知渠道; NO_FIELDS_TO_UPDATE: 至少需要提供一个字段进行更新",
                         "schema": {
                             "allOf": [
                                 {
@@ -2773,7 +2797,7 @@ const docTemplate = `{
                         }
                     },
                     "401": {
-                        "description": "未认证",
+                        "description": "未认证 - UNAUTHORIZED: 用户未认证",
                         "schema": {
                             "allOf": [
                                 {
@@ -2791,7 +2815,7 @@ const docTemplate = `{
                         }
                     },
                     "404": {
-                        "description": "配置不存在",
+                        "description": "配置不存在 - CONFIG_NOT_FOUND: 指定的通知配置不存在",
                         "schema": {
                             "allOf": [
                                 {
@@ -2809,7 +2833,7 @@ const docTemplate = `{
                         }
                     },
                     "500": {
-                        "description": "服务器内部错误",
+                        "description": "服务器内部错误 - INTERNAL_ERROR: 更新配置失败",
                         "schema": {
                             "allOf": [
                                 {
@@ -4580,47 +4604,6 @@ const docTemplate = `{
                     "type": "string"
                 },
                 "symbol": {
-                    "type": "string"
-                }
-            }
-        },
-        "types.NotificationConfig": {
-            "type": "object",
-            "properties": {
-                "bot_token": {
-                    "description": "可选字段，不同渠道用不同",
-                    "type": "string"
-                },
-                "channel": {
-                    "description": "telegram / lark / feishu",
-                    "type": "string"
-                },
-                "chat_id": {
-                    "type": "string"
-                },
-                "created_at": {
-                    "type": "string"
-                },
-                "id": {
-                    "description": "通用",
-                    "type": "integer"
-                },
-                "is_active": {
-                    "type": "boolean"
-                },
-                "name": {
-                    "type": "string"
-                },
-                "secret": {
-                    "type": "string"
-                },
-                "updated_at": {
-                    "type": "string"
-                },
-                "user_address": {
-                    "type": "string"
-                },
-                "webhook_url": {
                     "type": "string"
                 }
             }
