@@ -18,7 +18,6 @@ import (
 	"timelocker-backend/pkg/utils"
 
 	"github.com/ethereum/go-ethereum"
-	"github.com/ethereum/go-ethereum/accounts"
 	"github.com/ethereum/go-ethereum/accounts/abi"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/ethclient"
@@ -120,29 +119,20 @@ func (s *service) WalletConnect(ctx context.Context, req *types.WalletConnectReq
 
 	normalizedAddress := crypto.NormalizeAddress(req.WalletAddress)
 
-	// 2. 验证nonce
-	if err := s.validateAndUseNonce(ctx, normalizedAddress, req.Nonce, req.Message); err != nil {
-		logger.Error("WalletConnect nonce validation failed", err)
-		return nil, err
-	}
-
-	// 3. 根据钱包类型进行不同的验证
+	// 2. 根据钱包类型进行不同的验证
 	var isSafeWallet bool
 	var safeThreshold *int
 	var safeOwners *string
 
 	if req.WalletType == "safe" {
-		// Safe钱包验证逻辑
-		if err := s.verifySafeSignature(ctx, req, normalizedAddress); err != nil {
-			logger.Error("Safe signature verification failed", err)
-			return nil, fmt.Errorf("safe signature verification failed: %w", err)
-		}
+		// Safe钱包验证：只需要验证地址是否为Safe合约
+		logger.Info("Verifying Safe wallet", "safe_address", normalizedAddress, "chain_id", req.ChainID)
 
-		// 获取Safe信息
+		// 验证是否为Safe合约并获取Safe信息
 		safeInfo, err := s.getSafeInfo(ctx, normalizedAddress, req.ChainID)
 		if err != nil {
-			logger.Error("Failed to get Safe info", err)
-			return nil, fmt.Errorf("failed to get Safe info: %w", err)
+			logger.Error("Failed to verify Safe contract or get Safe info", err)
+			return nil, fmt.Errorf("address is not a valid Safe contract: %w", err)
 		}
 
 		isSafeWallet = true
@@ -153,8 +143,22 @@ func (s *service) WalletConnect(ctx context.Context, req *types.WalletConnectReq
 		ownersStr := string(ownersJSON)
 		safeOwners = &ownersStr
 
+		logger.Info("Safe wallet verified successfully", "safe_address", normalizedAddress, "threshold", threshold, "owners_count", len(safeInfo.Owners))
+
 	} else {
-		// 普通EOA钱包验证
+		// 普通EOA钱包验证：需要nonce和签名验证
+		if req.Nonce == "" || req.Message == "" || req.Signature == "" {
+			logger.Error("WalletConnect Error: ", fmt.Errorf("EOA wallet requires nonce, message and signature"))
+			return nil, fmt.Errorf("EOA wallet requires nonce, message and signature")
+		}
+
+		// 验证nonce
+		if err := s.validateAndUseNonce(ctx, normalizedAddress, req.Nonce, req.Message); err != nil {
+			logger.Error("WalletConnect nonce validation failed", err)
+			return nil, err
+		}
+
+		// 验证签名
 		err := crypto.VerifySignature(req.Message, req.Signature, req.WalletAddress)
 		if err != nil {
 			// 尝试从签名中恢复地址进行二次验证
@@ -338,36 +342,6 @@ func (s *service) VerifyToken(ctx context.Context, tokenString string) (*types.J
 	}
 
 	return claims, nil
-}
-
-// verifySafeSignature 验证Safe钱包签名 - 使用EIP-1271 isValidSignature方法
-func (s *service) verifySafeSignature(ctx context.Context, req *types.WalletConnectRequest, safeAddress string) error {
-	logger.Info("verifySafeSignature", "safe_address", safeAddress, "chain_id", req.ChainID)
-
-	normalizedSafeAddress := crypto.NormalizeAddress(safeAddress)
-
-	// 使用RPC管理器调用Safe合约的isValidSignature方法
-	var isValid bool
-	err := s.rpcManager.ExecuteWithRetry(ctx, req.ChainID, func(client *ethclient.Client) error {
-		valid, err := s.callIsValidSignature(ctx, client, normalizedSafeAddress, req.Message, req.Signature)
-		if err != nil {
-			return err
-		}
-		isValid = valid
-		return nil
-	})
-
-	if err != nil {
-		logger.Error("Failed to call isValidSignature", err)
-		return fmt.Errorf("failed to verify signature through Safe contract: %w", err)
-	}
-
-	if !isValid {
-		return fmt.Errorf("signature is not valid according to Safe contract")
-	}
-
-	logger.Info("Safe signature verified successfully", "safe_address", normalizedSafeAddress)
-	return nil
 }
 
 // getSafeInfo 获取Safe信息（从数据库或链上）
@@ -560,58 +534,6 @@ func (s *service) syncSafeInfoToDB(ctx context.Context, safeInfo *types.SafeInfo
 	}
 
 	return s.safeRepo.CreateOrUpdateSafe(ctx, safeWallet)
-}
-
-// callIsValidSignature 调用Safe合约的isValidSignature方法验证签名（EIP-1271）
-func (s *service) callIsValidSignature(ctx context.Context, client *ethclient.Client, safeAddress string, message string, signature string) (bool, error) {
-	contractAddr := common.HexToAddress(safeAddress)
-
-	// EIP-1271 isValidSignature方法的ABI
-	isValidSignatureABI := `[{"constant":true,"inputs":[{"name":"_data","type":"bytes"},{"name":"_signature","type":"bytes"}],"name":"isValidSignature","outputs":[{"name":"","type":"bytes4"}],"type":"function"}]`
-
-	parsedABI, err := abi.JSON(strings.NewReader(isValidSignatureABI))
-	if err != nil {
-		return false, fmt.Errorf("failed to parse isValidSignature ABI: %w", err)
-	}
-
-	// 准备消息数据 - 使用以太坊消息hash（带前缀）
-	// Safe通常期望的是经过以太坊消息前缀处理的hash
-	messageHash := accounts.TextHash([]byte(message))
-
-	// 准备签名数据
-	signatureBytes := common.FromHex(signature)
-
-	logger.Info("Calling isValidSignature", "safe_address", safeAddress, "message_hash", common.Bytes2Hex(messageHash), "signature_length", len(signatureBytes))
-
-	// 调用isValidSignature方法
-	callData, err := parsedABI.Pack("isValidSignature", messageHash, signatureBytes)
-	if err != nil {
-		return false, fmt.Errorf("failed to pack isValidSignature call: %w", err)
-	}
-
-	result, err := client.CallContract(ctx, ethereum.CallMsg{
-		To:   &contractAddr,
-		Data: callData,
-	}, nil)
-	if err != nil {
-		logger.Error("Failed to call isValidSignature", err, "safe_address", safeAddress)
-		return false, fmt.Errorf("failed to call isValidSignature: %w", err)
-	}
-
-	logger.Info("isValidSignature result", "result_length", len(result), "result_hex", common.Bytes2Hex(result))
-
-	// 检查返回值是否为EIP-1271的魔术值 0x1626ba7e
-	if len(result) >= 4 {
-		// EIP-1271魔术值：bytes4(keccak256("isValidSignature(bytes,bytes)"))
-		magicValue := [4]byte{0x16, 0x26, 0xba, 0x7e}
-		isValid := result[0] == magicValue[0] && result[1] == magicValue[1] &&
-			result[2] == magicValue[2] && result[3] == magicValue[3]
-
-		logger.Info("Signature validation result", "is_valid", isValid, "expected_magic", common.Bytes2Hex(magicValue[:]), "actual_result", common.Bytes2Hex(result[:4]))
-		return isValid, nil
-	}
-
-	return false, nil
 }
 
 // validateAndUseNonce 验证并使用nonce

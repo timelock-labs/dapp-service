@@ -53,10 +53,10 @@ type GetNonceResponse struct {
 type WalletConnectRequest struct {
 	ChainID       int    `json:"chain_id,omitempty"` // Safe需要指定链ID
 	WalletAddress string `json:"wallet_address" binding:"required,len=42"`
-	Signature     string `json:"signature" binding:"required"`
-	Message       string `json:"message" binding:"required"`
-	WalletType    string `json:"wallet_type,omitempty"`    // "eoa", "safe"
-	Nonce         string `json:"nonce" binding:"required"` // 后端生成的nonce
+	Signature     string `json:"signature,omitempty"`                                  // EOA钱包需要，Safe钱包可选
+	Message       string `json:"message,omitempty"`                                    // EOA钱包需要，Safe钱包可选
+	WalletType    string `json:"wallet_type,omitempty"`                                // "eoa", "safe"
+	Nonce         string `json:"nonce" binding:"required_if=WalletType eoa,omitempty"` // EOA钱包需要nonce，Safe钱包不需要
 }
 
 // WalletConnectResponse 钱包连接响应

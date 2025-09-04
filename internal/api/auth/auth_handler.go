@@ -3,6 +3,7 @@ package auth
 import (
 	"errors"
 	"net/http"
+	"strings"
 
 	"timelocker-backend/internal/middleware"
 	"timelocker-backend/internal/service/auth"
@@ -111,15 +112,15 @@ func (h *Handler) GetNonce(c *gin.Context) {
 
 // WalletConnect 钱包连接认证
 // @Summary 钱包连接认证（支持EOA和Safe钱包）
-// @Description 通过钱包签名进行用户认证。流程：1.先调用/auth/nonce获取随机nonce和消息 2.让用户对消息进行签名 3.调用此接口完成认证。支持普通EOA钱包和Safe多签钱包。对于Safe钱包，需要指定wallet_type为"safe"并提供chain_id，使用EIP-1271标准验证签名。
+// @Description 通过钱包进行用户认证。EOA钱包：1.先调用/auth/nonce获取随机nonce和消息 2.让用户对消息进行签名 3.调用此接口完成认证。Safe钱包：直接提供Safe地址和chain_id即可，系统会验证地址是否为有效的Safe合约。
 // @Tags Authentication
 // @Accept json
 // @Produce json
-// @Param request body types.WalletConnectRequest true "钱包连接认证请求体。必须包含从/auth/nonce获取的nonce。wallet_type可选值：'eoa'（默认）或'safe'。Safe钱包需要提供chain_id"
+// @Param request body types.WalletConnectRequest true "钱包连接认证请求体。EOA钱包需要nonce、message和signature。Safe钱包只需要wallet_address、wallet_type='safe'和chain_id"
 // @Success 200 {object} types.APIResponse{data=types.WalletConnectResponse} "认证成功，返回访问令牌和用户信息"
-// @Failure 400 {object} types.APIResponse{error=types.APIError} "请求参数错误（INVALID_WALLET_ADDRESS等）"
-// @Failure 401 {object} types.APIResponse{error=types.APIError} "认证失败，可能是签名无效、nonce过期或地址恢复失败"
-// @Failure 500 {object} types.APIResponse{error=types.APIError} "服务器内部错误"
+// @Failure 400 {object} types.APIResponse{error=types.APIError} "请求参数错误 - INVALID_REQUEST: 请求参数格式错误; INVALID_WALLET_ADDRESS: 钱包地址格式无效; MISSING_REQUIRED_FIELDS: EOA钱包缺少必需字段; INVALID_SAFE_CONTRACT: 地址不是有效的Safe合约"
+// @Failure 401 {object} types.APIResponse{error=types.APIError} "认证失败 - INVALID_SIGNATURE: 签名验证失败; SIGNATURE_RECOVERY_FAILED: 无法从签名恢复地址; INVALID_NONCE: nonce无效或已过期; NONCE_ALREADY_USED: nonce已被使用"
+// @Failure 500 {object} types.APIResponse{error=types.APIError} "服务器内部错误 - INTERNAL_ERROR: 服务器内部错误; DATABASE_ERROR: 数据库操作失败; TOKEN_GENERATION_FAILED: JWT令牌生成失败"
 // @Router /api/v1/auth/wallet-connect [post]
 func (h *Handler) WalletConnect(c *gin.Context) {
 	var req types.WalletConnectRequest
@@ -143,16 +144,38 @@ func (h *Handler) WalletConnect(c *gin.Context) {
 		var statusCode int
 		var errorCode string
 
-		switch err {
-		case auth.ErrInvalidAddress:
+		// 根据错误类型和消息内容确定具体的错误码
+		switch {
+		case err == auth.ErrInvalidAddress:
 			statusCode = http.StatusBadRequest
 			errorCode = "INVALID_WALLET_ADDRESS"
-		case auth.ErrInvalidSignature:
+		case err == auth.ErrInvalidSignature:
 			statusCode = http.StatusUnauthorized
 			errorCode = "INVALID_SIGNATURE"
-		case auth.ErrSignatureRecovery:
+		case err == auth.ErrSignatureRecovery:
 			statusCode = http.StatusUnauthorized
 			errorCode = "SIGNATURE_RECOVERY_FAILED"
+		case err == auth.ErrInvalidNonce:
+			statusCode = http.StatusUnauthorized
+			errorCode = "INVALID_NONCE"
+		case err == auth.ErrNonceUsed:
+			statusCode = http.StatusUnauthorized
+			errorCode = "NONCE_ALREADY_USED"
+		case strings.Contains(err.Error(), "EOA wallet requires"):
+			statusCode = http.StatusBadRequest
+			errorCode = "MISSING_REQUIRED_FIELDS"
+		case strings.Contains(err.Error(), "not a valid Safe contract"):
+			statusCode = http.StatusBadRequest
+			errorCode = "INVALID_SAFE_CONTRACT"
+		case strings.Contains(err.Error(), "failed to create user"):
+			statusCode = http.StatusInternalServerError
+			errorCode = "DATABASE_ERROR"
+		case strings.Contains(err.Error(), "failed to generate jwt tokens"):
+			statusCode = http.StatusInternalServerError
+			errorCode = "TOKEN_GENERATION_FAILED"
+		case strings.Contains(err.Error(), "database error"):
+			statusCode = http.StatusInternalServerError
+			errorCode = "DATABASE_ERROR"
 		default:
 			statusCode = http.StatusInternalServerError
 			errorCode = "INTERNAL_ERROR"

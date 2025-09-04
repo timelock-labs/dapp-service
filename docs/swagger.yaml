@@ -941,11 +941,13 @@ definitions:
         description: Safe需要指定链ID
         type: integer
       message:
+        description: EOA钱包需要，Safe钱包可选
         type: string
       nonce:
-        description: 后端生成的nonce
+        description: EOA钱包需要nonce，Safe钱包不需要
         type: string
       signature:
+        description: EOA钱包需要，Safe钱包可选
         type: string
       wallet_address:
         type: string
@@ -953,9 +955,6 @@ definitions:
         description: '"eoa", "safe"'
         type: string
     required:
-    - message
-    - nonce
-    - signature
     - wallet_address
     type: object
   types.WalletConnectResponse:
@@ -1554,9 +1553,9 @@ paths:
     post:
       consumes:
       - application/json
-      description: 通过钱包签名进行用户认证。流程：1.先调用/auth/nonce获取随机nonce和消息 2.让用户对消息进行签名 3.调用此接口完成认证。支持普通EOA钱包和Safe多签钱包。对于Safe钱包，需要指定wallet_type为"safe"并提供chain_id，使用EIP-1271标准验证签名。
+      description: 通过钱包进行用户认证。EOA钱包：1.先调用/auth/nonce获取随机nonce和消息 2.让用户对消息进行签名 3.调用此接口完成认证。Safe钱包：直接提供Safe地址和chain_id即可，系统会验证地址是否为有效的Safe合约。
       parameters:
-      - description: 钱包连接认证请求体。必须包含从/auth/nonce获取的nonce。wallet_type可选值：'eoa'（默认）或'safe'。Safe钱包需要提供chain_id
+      - description: 钱包连接认证请求体。EOA钱包需要nonce、message和signature。Safe钱包只需要wallet_address、wallet_type='safe'和chain_id
         in: body
         name: request
         required: true
@@ -1575,7 +1574,9 @@ paths:
                   $ref: '#/definitions/types.WalletConnectResponse'
               type: object
         "400":
-          description: 请求参数错误（INVALID_WALLET_ADDRESS等）
+          description: '请求参数错误 - INVALID_REQUEST: 请求参数格式错误; INVALID_WALLET_ADDRESS:
+            钱包地址格式无效; MISSING_REQUIRED_FIELDS: EOA钱包缺少必需字段; INVALID_SAFE_CONTRACT:
+            地址不是有效的Safe合约'
           schema:
             allOf:
             - $ref: '#/definitions/types.APIResponse'
@@ -1584,7 +1585,8 @@ paths:
                   $ref: '#/definitions/types.APIError'
               type: object
         "401":
-          description: 认证失败，可能是签名无效、nonce过期或地址恢复失败
+          description: '认证失败 - INVALID_SIGNATURE: 签名验证失败; SIGNATURE_RECOVERY_FAILED:
+            无法从签名恢复地址; INVALID_NONCE: nonce无效或已过期; NONCE_ALREADY_USED: nonce已被使用'
           schema:
             allOf:
             - $ref: '#/definitions/types.APIResponse'
@@ -1593,7 +1595,8 @@ paths:
                   $ref: '#/definitions/types.APIError'
               type: object
         "500":
-          description: 服务器内部错误
+          description: '服务器内部错误 - INTERNAL_ERROR: 服务器内部错误; DATABASE_ERROR: 数据库操作失败;
+            TOKEN_GENERATION_FAILED: JWT令牌生成失败'
           schema:
             allOf:
             - $ref: '#/definitions/types.APIResponse'
