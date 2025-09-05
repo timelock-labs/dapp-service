@@ -63,3 +63,12 @@ coverage.out
 
 # Vendor (if not using go modules)
 vendor/
+
+# Backup files (but keep the directory structure)
+backups/*.json
+backups/*.json.gz
+backups/*.json.gpg
+backups/*.log
+
+# Scripts (will be mounted as volumes)
+scripts/

@@ -1,5 +1,3 @@
-version: '3.8'
-
 services:
   # PostgreSQL 数据库
   postgres:
@@ -121,6 +119,7 @@ services:
     volumes:
       - app_logs:/var/log/timelocker # 将宿主（或命名卷）挂载到容器日志目录，便于持久化和查看日志
       - ./config.docker.yaml:/app/config.yaml:ro # 将本地配置文件以只读模式挂载到容器的 /app/config.yaml（容器内程序读取该文件）
+      - ./backups:/app/backups # 将本地备份目录挂载到容器，便于备份文件的持久化和访问
     healthcheck:
       test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:8080/api/v1/health"] # 检查命令：用 wget 检测后端 API 是否就绪
       interval: 30s # 检查间隔：30 秒
@@ -157,6 +156,37 @@ services:
       options:
         max-size: "50m" # 最大日志大小：50MB
         max-file: "3" # 最大日志文件数：3 个
+
+  # 可选：备份调度器（如果需要容器化的定时备份）
+  backup-scheduler:
+    image: alpine:latest
+    container_name: timelocker-backup-scheduler
+    restart: unless-stopped
+    volumes:
+      - ./scripts:/scripts:ro
+      - ./backups:/backups
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+    environment:
+      - BACKUP_RETENTION_DAYS=${BACKUP_RETENTION_DAYS:-30}
+      - MAX_BACKUPS=${MAX_BACKUPS:-50}
+      - BACKUP_PREFIX=${BACKUP_PREFIX:-timelocker_auto}
+      - CONTAINER_NAME=timelocker-backend
+    command: >
+      sh -c "
+        apk add --no-cache docker-cli bash &&
+        echo '0 2 * * * /scripts/auto-backup.sh' | crontab - &&
+        echo '0 3 * * 0 /scripts/auto-backup.sh --cleanup-only' | crontab - &&
+        crond -f -l 2
+      "
+    depends_on:
+      - timelocker-backend
+    networks:
+      - timelocker-network
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "2"
 
 networks:
   timelocker-network:

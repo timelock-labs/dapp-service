@@ -21,6 +21,12 @@ RUN CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build \
     -o timelocker-backend \
     ./cmd/server
 
+# 构建备份工具
+RUN CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build \
+    -ldflags='-w -s -extldflags "-static"' \
+    -o backup \
+    ./cmd/backup
+
 # 第二阶段：运行阶段
 FROM alpine:latest
 
@@ -36,13 +42,14 @@ WORKDIR /app
 
 # 从构建阶段复制二进制文件
 COPY --from=builder /app/timelocker-backend .
+COPY --from=builder /app/backup .
 
 # 复制配置文件和其他必要文件
 COPY config.yaml ./
 COPY email_templates/ ./email_templates/
 
-# 创建日志目录
-RUN mkdir -p /var/log/timelocker && \
+# 创建备份和日志目录
+RUN mkdir -p /var/log/timelocker /app/backups && \
     chown -R timelocker:timelocker /app /var/log/timelocker
 
 # 切换到非root用户
