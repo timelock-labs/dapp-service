@@ -164,6 +164,10 @@ func main() {
 	docs.SwaggerInfo.Title = "TimeLocker Backend API v1.0"
 	docs.SwaggerInfo.Description = "TimeLocker Backend API"
 	router.GET("/swagger/*any", ginSwagger.WrapHandler(swaggerFiles.Handler))
+	// 健康检查端点
+	router.GET("/api/v1/health", func(c *gin.Context) {
+		c.JSON(http.StatusOK, gin.H{"status": "ok"})
+	})
 
 	// 11. 启动RPC管理器
 	rpcManager := scannerService.NewRPCManager(cfg, chainRepository)
