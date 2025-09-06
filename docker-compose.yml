@@ -182,7 +182,7 @@ services:
         crond -f -l 2
       "
     depends_on:
-      timelocker-backend:
+      postgres:
         condition: service_healthy
     networks:
       - timelocker-network

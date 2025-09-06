@@ -95,13 +95,6 @@ check_docker_environment() {
         exit 1
     fi
     
-    # 检查容器是否运行
-    if ! docker ps | grep -q "$CONTAINER_NAME"; then
-        log_error "TimeLocker backend container ($CONTAINER_NAME) is not running"
-        log "please start the service: cd $PROJECT_ROOT && docker-compose up -d"
-        exit 1
-    fi
-    
     log_success "Docker environment check passed"
 }
 
@@ -118,12 +111,52 @@ execute_backup_command() {
     local cmd="$1"
     log "execute backup command: $cmd"
     
-    if docker exec "$CONTAINER_NAME" $cmd; then
-        log_success "command executed successfully"
-        return 0
+    # 检查容器是否正在运行
+    if docker ps | grep -q "$CONTAINER_NAME"; then
+        log "using running container: $CONTAINER_NAME"
+        if docker exec "$CONTAINER_NAME" $cmd; then
+            log_success "command executed successfully"
+            return 0
+        else
+            log_error "command executed failed"
+            return 1
+        fi
     else
-        log_error "command executed failed"
-        return 1
+        log "container $CONTAINER_NAME is not running, creating temporary container..."
+        
+        # 检查postgres容器是否运行
+        if ! docker ps | grep -q "timelocker-postgres"; then
+            log_error "PostgreSQL container (timelocker-postgres) is not running"
+            log "please start PostgreSQL: cd $PROJECT_ROOT && docker-compose up -d postgres"
+            exit 1
+        fi
+        
+        # 获取项目名称和镜像名称
+        local project_name=$(basename "$PROJECT_ROOT")
+        local network_name="${project_name}_timelocker-network"
+        local image_name="${project_name}-timelocker-backend:latest"
+        
+        log "using network: $network_name"
+        log "using image: $image_name"
+        
+        # 使用临时容器执行备份命令
+        if docker run --rm \
+            --network "$network_name" \
+            -v "$PROJECT_ROOT/backups:/app/backups" \
+            -v "$PROJECT_ROOT/config.docker.yaml:/app/config.yaml:ro" \
+            -e DATABASE_HOST=postgres \
+            -e DATABASE_PORT=5432 \
+            -e DATABASE_USER="${POSTGRES_USER:-timelocker}" \
+            -e DATABASE_PASSWORD="${POSTGRES_PASSWORD:-timelocker}" \
+            -e DATABASE_DBNAME="${POSTGRES_DB:-timelocker_db}" \
+            -e DATABASE_SSLMODE=disable \
+            "$image_name" $cmd; then
+            log_success "command executed successfully using temporary container"
+            return 0
+        else
+            log_error "command executed failed using temporary container"
+            return 1
+        fi
     fi
 }
 
@@ -240,7 +273,7 @@ main() {
                 exit 1
             fi
             
-            # 将备份文件从宿主机复制到容器
+            # 处理备份文件路径
             local host_file="$file"
             if [[ "$file" != /* ]]; then
                 host_file="$BACKUP_DIR/$file"
@@ -251,12 +284,19 @@ main() {
                 exit 1
             fi
             
-            log "copy backup file to container..."
-            if docker cp "$host_file" "$CONTAINER_NAME:/app/backups/$(basename "$file")"; then
-                log_success "backup file copied successfully"
+            local container_file="/app/backups/$(basename "$file")"
+            
+            # 如果主容器正在运行，需要复制文件到容器
+            if docker ps | grep -q "$CONTAINER_NAME"; then
+                log "copy backup file to container..."
+                if docker cp "$host_file" "$CONTAINER_NAME:$container_file"; then
+                    log_success "backup file copied successfully"
+                else
+                    log_error "backup file copied failed"
+                    exit 1
+                fi
             else
-                log_error "backup file copied failed"
-                exit 1
+                log "using mounted backup directory, no file copy needed"
             fi
             
             log "start restoring data..."
@@ -271,8 +311,8 @@ main() {
                 fi
             fi
             
-            # 恢复时总是清空现有数据并替换
-            backup_cmd="$backup_cmd -clear -conflict=replace"
+            # 重新构建备份命令，使用容器内的文件路径
+            backup_cmd="/app/backup -action=$action -file=$container_file -clear -conflict=replace"
             
             if execute_backup_command "$backup_cmd"; then
                 log_success "data restored successfully"
@@ -286,7 +326,7 @@ main() {
                 exit 1
             fi
             
-            # 将备份文件从宿主机复制到容器（如果需要）
+            # 处理备份文件路径
             local host_file="$file"
             if [[ "$file" != /* ]]; then
                 host_file="$BACKUP_DIR/$file"
@@ -297,13 +337,23 @@ main() {
                 exit 1
             fi
             
-            log "copy backup file to container..."
-            if docker cp "$host_file" "$CONTAINER_NAME:/app/backups/$(basename "$file")"; then
-                log_success "backup file copied successfully"
+            local container_file="/app/backups/$(basename "$file")"
+            
+            # 如果主容器正在运行，需要复制文件到容器
+            if docker ps | grep -q "$CONTAINER_NAME"; then
+                log "copy backup file to container..."
+                if docker cp "$host_file" "$CONTAINER_NAME:$container_file"; then
+                    log_success "backup file copied successfully"
+                else
+                    log_error "backup file copied failed"
+                    exit 1
+                fi
             else
-                log_error "backup file copied failed"
-                exit 1
+                log "using mounted backup directory, no file copy needed"
             fi
+            
+            # 重新构建备份命令，使用容器内的文件路径
+            backup_cmd="/app/backup -action=$action -file=$container_file"
             
             if execute_backup_command "$backup_cmd"; then
                 log_success "$action operation completed"
