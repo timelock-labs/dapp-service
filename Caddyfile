@@ -1,75 +1,27 @@
 test.timelock.live {
-    tls zem@timelock.live
+	tls zem@timelock.live
 
-    reverse_proxy localhost:8080 {
-        health_uri /api/v1/health
-        health_interval 30s
-        health_timeout 10s
-    }
+	# 全局日志
+	log {
+		output file /var/log/caddy/api.access.log {
+			roll_size 100MiB
+			roll_keep 10
+			roll_keep_for 168h
+		}
+	}
 
-    log {
-        output file /var/log/caddy/api.access.log {
-            roll_size 100MiB   # 单个文件最大 100 MiB
-            roll_keep 10       # 保留 10 个旧文件
-            roll_keep_for 168h # 7 天
-        }
-    }
+    reverse_proxy localhost:8080
 
-    encode gzip zstd
+	# 压缩
+	encode gzip zstd
 
-    header {
-        # 防止点击劫持
-        X-Frame-Options DENY
-        X-Content-Type-Options nosniff
-        # 开启严格的传输安全
-        Strict-Transport-Security "max-age=31536000; includeSubDomains"
-        # 移除服务器信息
-        -Server
-        # 添加其他安全头
-        X-XSS-Protection "1; mode=block"
-        Referrer-Policy "strict-origin-when-cross-origin"
-        Permissions-Policy "geolocation=(), microphone=(), camera=()"
-    }
-
-    # API 路由优化
-    handle_path /api/* {
-        reverse_proxy localhost:8080 {
-            # 健康检查
-            health_uri /api/v1/health
-            health_interval 30s
-            health_timeout 10s
-            
-            # 请求头优化
-            header_up X-Real-IP {remote_host}
-            header_up X-Forwarded-For {remote_host}
-            header_up X-Forwarded-Proto {scheme}
-        }
-    }
-
-    # 静态文件缓存 (如果有的话)
-    handle /static/* {
-        root * /var/www
-        file_server
-        
-        header Cache-Control "public, max-age=31536000"
-        header Vary "Accept-Encoding"
-    }
-
-    # 默认路由
-    handle {
-        reverse_proxy localhost:8080 {
-            health_uri /api/v1/health
-            health_interval 30s
-            health_timeout 10s
-        }
-    }
-
-    # 错误页面
-    handle_errors {
-        @5xx expression `{err.status_code} >= 500 && {err.status_code} < 600`
-        respond @5xx "Service temporarily unavailable" 503
-        
-        @4xx expression `{err.status_code} >= 400 && {err.status_code} < 500`
-        respond @4xx "Not found" 404
-    }
+	# 安全头
+	header {
+		X-Frame-Options DENY
+		X-Content-Type-Options nosniff
+		Strict-Transport-Security "max-age=31536000; includeSubDomains"
+		-Server
+		Referrer-Policy "strict-origin-when-cross-origin"
+		Permissions-Policy "geolocation=(), microphone=(), camera=()"
+	}
 }
