@@ -224,6 +224,7 @@ main() {
     local backup_cmd="/app/backup -action=$action"
     
     # 处理文件路径
+    local container_file=""
     if [ -n "$file" ]; then
         # 确保文件名格式正确
         local filename=$(basename "$file")
@@ -232,9 +233,9 @@ main() {
             filename="${filename}.json"
         fi
         # 容器内的备份文件路径
-        file="/app/backups/$filename"
-        backup_cmd="$backup_cmd -file=$file"
-        log "backup file: $file"
+        container_file="/app/backups/$filename"
+        backup_cmd="$backup_cmd -file=$container_file"
+        log "backup file: $container_file"
     fi
     
     # 添加其他参数
@@ -254,10 +255,10 @@ main() {
             log "start creating data backup..."
             if execute_backup_command "$backup_cmd"; then
                 log_success "backup created successfully"
-                if [ -n "$file" ]; then
+                if [ -n "$container_file" ]; then
                     # 将备份文件从容器复制到宿主机
-                    local host_file="$BACKUP_DIR/$(basename "$file")"
-                    if docker cp "$CONTAINER_NAME:$file" "$host_file"; then
+                    local host_file="$BACKUP_DIR/$(basename "$container_file")"
+                    if docker cp "$CONTAINER_NAME:$container_file" "$host_file"; then
                         log_success "backup file saved to: $host_file"
                     else
                         log_warning "cannot copy backup file to host"
@@ -284,7 +285,7 @@ main() {
                 exit 1
             fi
             
-            local container_file="/app/backups/$(basename "$file")"
+            # 使用已经计算好的container_file路径
             
             # 如果主容器正在运行，需要复制文件到容器
             if docker ps | grep -q "$CONTAINER_NAME"; then
@@ -337,7 +338,7 @@ main() {
                 exit 1
             fi
             
-            local container_file="/app/backups/$(basename "$file")"
+            # 使用已经计算好的container_file路径
             
             # 如果主容器正在运行，需要复制文件到容器
             if docker ps | grep -q "$CONTAINER_NAME"; then
