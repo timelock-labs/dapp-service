@@ -365,7 +365,6 @@ docs:
 	@echo "$(BLUE)🔗 有用链接:$(NC)"
 	@echo "  🌐 应用地址: http://localhost:8080"
 	@echo "  🌐 健康检查: http://localhost:8080/api/v1/health"
-	@echo "  📊 Caddy管理: http://localhost:80"
 
 # ================================
 # 生产环境特殊操作

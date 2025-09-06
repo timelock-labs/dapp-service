@@ -47,8 +47,8 @@ import (
 	"timelocker-backend/pkg/utils"
 
 	"github.com/gin-gonic/gin"
-	swaggerFiles "github.com/swaggo/files"
-	ginSwagger "github.com/swaggo/gin-swagger"
+	// swaggerFiles "github.com/swaggo/files"
+	// ginSwagger "github.com/swaggo/gin-swagger"
 )
 
 // @title TimeLocker Backend API
@@ -163,7 +163,7 @@ func main() {
 	docs.SwaggerInfo.Host = "localhost:" + cfg.Server.Port
 	docs.SwaggerInfo.Title = "TimeLocker Backend API v1.0"
 	docs.SwaggerInfo.Description = "TimeLocker Backend API"
-	router.GET("/swagger/*any", ginSwagger.WrapHandler(swaggerFiles.Handler))
+	// router.GET("/swagger/*any", ginSwagger.WrapHandler(swaggerFiles.Handler))
 	// 健康检查端点
 	router.GET("/api/v1/health", func(c *gin.Context) {
 		c.JSON(http.StatusOK, gin.H{"status": "ok"})

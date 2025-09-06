@@ -1,14 +1,18 @@
 test.timelock.live {
     tls zem@timelock.live
 
-    reverse_proxy timelocker-backend:8080 {
+    reverse_proxy localhost:8080 {
         health_uri /api/v1/health
         health_interval 30s
         health_timeout 10s
     }
 
     log {
-        output file /var/log/caddy/api.access.log
+        output file /var/log/caddy/api.access.log {
+            roll_size 100MiB   # 单个文件最大 100 MiB
+            roll_keep 10       # 保留 10 个旧文件
+            roll_keep_for 168h # 7 天
+        }
     }
 
     encode gzip zstd
@@ -29,7 +33,7 @@ test.timelock.live {
 
     # API 路由优化
     handle_path /api/* {
-        reverse_proxy timelocker-backend:8080 {
+        reverse_proxy localhost:8080 {
             # 健康检查
             health_uri /api/v1/health
             health_interval 30s
@@ -39,15 +43,6 @@ test.timelock.live {
             header_up X-Real-IP {remote_host}
             header_up X-Forwarded-For {remote_host}
             header_up X-Forwarded-Proto {scheme}
-        }
-    }
-
-    # Swagger 文档路由
-    handle_path /swagger/* {
-        reverse_proxy timelocker-backend:8080 {
-            health_uri /api/v1/health
-            health_interval 30s
-            health_timeout 10s
         }
     }
 
@@ -62,7 +57,7 @@ test.timelock.live {
 
     # 默认路由
     handle {
-        reverse_proxy timelocker-backend:8080 {
+        reverse_proxy localhost:8080 {
             health_uri /api/v1/health
             health_interval 30s
             health_timeout 10s

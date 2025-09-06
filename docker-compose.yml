@@ -132,32 +132,6 @@ services:
         max-size: "100m" # 最大日志大小：100MB
         max-file: "5" # 最大日志文件数：5 个
 
-  # Caddy 反向代理 (可选，如果不想单独部署Caddy)
-  caddy:
-    image: caddy:2-alpine # 镜像版本
-    container_name: timelocker-caddy
-    restart: unless-stopped # 重启策略：容器退出时重启，除非人为 stop
-    ports:
-      - "80:80" # 将容器的 80 端口映射到主机的 80 端口
-      - "443:443" # 将容器的 443 端口映射到主机的 443 端口
-    volumes:
-      - ./Caddyfile:/etc/caddy/Caddyfile:ro # 将本地 Caddyfile 以只读模式挂载到容器的 /etc/caddy/Caddyfile（容器内程序读取该文件）
-      - caddy_data:/data # 将名为 caddy_data 的 volume 挂载到容器的 data 目录，用于持久化 Caddy 数据
-      - caddy_config:/config # 将名为 caddy_config 的 volume 挂载到容器的 config 目录，用于持久化 Caddy 配置
-      - caddy_logs:/var/log/caddy # 将名为 caddy_logs 的 volume 挂载到容器的 logs 目录，用于持久化 Caddy 日志
-    networks:
-      - timelocker-network # 使用下方定义的自定义 bridge 网络，服务间可通过服务名互相访问
-    depends_on:
-      timelocker-backend:
-        condition: service_healthy # 等待后端服务健康检查通过
-    environment:
-      - CADDY_INGRESS_NETWORKS=timelocker-network # 设置 Caddy 的 ingress 网络为 timelocker-network
-    logging:
-      driver: "json-file" # 使用 json-file 驱动（默认），日志以 JSON 格式保存
-      options:
-        max-size: "50m" # 最大日志大小：50MB
-        max-file: "3" # 最大日志文件数：3 个
-
   # 自动备份调度器（每天凌晨2点自动备份）
   backup-scheduler:
     image: alpine:latest
@@ -203,10 +177,4 @@ volumes:
   redis_data:
     driver: local
   app_logs:
-    driver: local
-  caddy_data:
-    driver: local
-  caddy_config:
-    driver: local
-  caddy_logs:
     driver: local
