@@ -313,7 +313,7 @@ main() {
             fi
             
             # 重新构建备份命令，使用容器内的文件路径
-            backup_cmd="/app/backup -action=$action -file=$container_file -clear -conflict=replace"
+            backup_cmd="/app/backup -action=$action -file=$container_file -clear -conflict=replace -auto"
             
             if execute_backup_command "$backup_cmd"; then
                 log_success "data restored successfully"

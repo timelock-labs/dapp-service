@@ -21,6 +21,7 @@ func main() {
 		backupPath = flag.String("file", "", "Backup File Path")
 		clearData  = flag.Bool("clear", false, "Clear Existing Data When Restore")
 		conflict   = flag.String("conflict", "skip", "Conflict Resolution Strategy: skip, replace, error")
+		autoMode   = flag.Bool("auto", false, "Auto Mode (skip user confirmation)")
 		help       = flag.Bool("help", false, "Show Help")
 	)
 	flag.Parse()
@@ -54,7 +55,7 @@ func main() {
 	case "backup":
 		handleBackup(backupManager, *backupPath)
 	case "restore":
-		handleRestore(backupManager, *backupPath, *clearData, *conflict)
+		handleRestore(backupManager, *backupPath, *clearData, *conflict, *autoMode)
 	case "validate":
 		handleValidate(backupManager, *backupPath)
 	case "info":
@@ -86,7 +87,7 @@ func handleBackup(bm *database.BackupManager, backupPath string) {
 	fmt.Printf("Backup created successfully: %s\n", backupPath)
 }
 
-func handleRestore(bm *database.BackupManager, backupPath string, clearData bool, conflictStr string) {
+func handleRestore(bm *database.BackupManager, backupPath string, clearData bool, conflictStr string, autoMode bool) {
 	if backupPath == "" {
 		fmt.Println("Error: Backup file path is required")
 		os.Exit(1)
@@ -117,13 +118,17 @@ func handleRestore(bm *database.BackupManager, backupPath string, clearData bool
 	}
 	fmt.Printf("Conflict strategy: %s\n", conflictStr)
 
-	// 询问用户确认
-	fmt.Print("Continue? (y/N): ")
-	var confirm string
-	fmt.Scanln(&confirm)
-	if confirm != "y" && confirm != "Y" {
-		fmt.Println("Operation cancelled")
-		return
+	// 询问用户确认（除非是自动模式）
+	if !autoMode {
+		fmt.Print("Continue? (y/N): ")
+		var confirm string
+		fmt.Scanln(&confirm)
+		if confirm != "y" && confirm != "Y" {
+			fmt.Println("Operation cancelled")
+			return
+		}
+	} else {
+		fmt.Println("Auto mode: proceeding with restore...")
 	}
 
 	if err := bm.RestoreBackup(backupPath, options); err != nil {
@@ -234,6 +239,7 @@ Options:
   -file=<path>        Backup file path
   -clear             Clear existing data when restore (only for restore)
   -conflict=<strategy>    Conflict resolution strategy: skip|replace|error (only for restore)
+  -auto              Auto mode (skip user confirmation)
   -help              Display this help message
 
 Examples:
