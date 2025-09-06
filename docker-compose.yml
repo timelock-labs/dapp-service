@@ -95,7 +95,7 @@ services:
       EMAIL_FROM_NAME: ${EMAIL_FROM_NAME:-TimeLocker Notification} # 邮件发件人名称：使用环境变量 EMAIL_FROM_NAME 否则默认 TimeLocker Notification
       EMAIL_FROM_EMAIL: ${EMAIL_FROM_EMAIL} # 邮件发件人邮箱：使用环境变量 EMAIL_FROM_EMAIL 否则默认
       EMAIL_VERIFICATION_CODE_EXPIRY: ${EMAIL_VERIFICATION_CODE_EXPIRY:-5m} # 邮件验证码过期时间：使用环境变量 EMAIL_VERIFICATION_CODE_EXPIRY 否则默认 5m
-      EMAIL_URL: ${EMAIL_URL:-https://test.timelock.live} # 邮件 URL：使用环境变量 EMAIL_URL 否则默认 https://test.timelock.live
+      EMAIL_URL: ${EMAIL_URL:-https://timelock.live} # 邮件 URL：使用环境变量 EMAIL_URL 否则默认 https://timelock.live
       
       # 扫链系统配置
       SCANNER_RPC_TIMEOUT: ${SCANNER_RPC_TIMEOUT:-20s} # RPC 超时时间：使用环境变量 SCANNER_RPC_TIMEOUT 否则默认 20s
@@ -148,7 +148,8 @@ services:
     networks:
       - timelocker-network # 使用下方定义的自定义 bridge 网络，服务间可通过服务名互相访问
     depends_on:
-      - timelocker-backend # 等后端服务启动（compose 会保证后端先尝试启动，但不一定表示后端已完全 ready）
+      timelocker-backend:
+        condition: service_healthy # 等待后端服务健康检查通过
     environment:
       - CADDY_INGRESS_NETWORKS=timelocker-network # 设置 Caddy 的 ingress 网络为 timelocker-network
     logging:

@@ -1,7 +1,11 @@
 test.timelock.live {
     tls zem@timelock.live
 
-    reverse_proxy timelocker-backend:8080
+    reverse_proxy timelocker-backend:8080 {
+        health_uri /api/v1/health
+        health_interval 30s
+        health_timeout 10s
+    }
 
     log {
         output file /var/log/caddy/api.access.log
@@ -29,10 +33,7 @@ test.timelock.live {
             # 健康检查
             health_uri /api/v1/health
             health_interval 30s
-            health_timeout 5s
-            
-            # 负载均衡和故障转移
-            lb_policy round_robin
+            health_timeout 10s
             
             # 请求头优化
             header_up X-Real-IP {remote_host}
@@ -43,7 +44,11 @@ test.timelock.live {
 
     # Swagger 文档路由
     handle_path /swagger/* {
-        reverse_proxy timelocker-backend:8080
+        reverse_proxy timelocker-backend:8080 {
+            health_uri /api/v1/health
+            health_interval 30s
+            health_timeout 10s
+        }
     }
 
     # 静态文件缓存 (如果有的话)
@@ -57,7 +62,11 @@ test.timelock.live {
 
     # 默认路由
     handle {
-        reverse_proxy timelocker-backend:8080
+        reverse_proxy timelocker-backend:8080 {
+            health_uri /api/v1/health
+            health_interval 30s
+            health_timeout 10s
+        }
     }
 
     # 错误页面
