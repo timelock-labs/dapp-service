@@ -172,8 +172,14 @@ create_backup() {
         return 1
     fi
     
-    # 执行备份
-    if "$BACKUP_SCRIPT" --action backup --file "$backup_filename"; then
+    # 检查Docker容器是否运行
+    if ! docker ps | grep -q "timelocker-backend"; then
+        log_error "TimeLocker backend container is not running"
+        return 1
+    fi
+    
+    # 执行备份（使用绝对路径调用脚本）
+    if "$BACKUP_SCRIPT" --action backup --file "$backup_filename" --auto; then
         log_success "auto backup created successfully: $backup_filename"
         
         # 验证备份文件
@@ -182,7 +188,7 @@ create_backup() {
             log_success "backup file size: $file_size"
             
             # 验证备份文件完整性
-            if "$BACKUP_SCRIPT" --action validate --file "$backup_filename" >/dev/null 2>&1; then
+            if "$BACKUP_SCRIPT" --action validate --file "$backup_filename" --auto >/dev/null 2>&1; then
                 log_success "backup file validation passed"
             else
                 log_warning "backup file validation failed, but file is created"

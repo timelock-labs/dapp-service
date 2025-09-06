@@ -157,7 +157,7 @@ services:
         max-size: "50m" # 最大日志大小：50MB
         max-file: "3" # 最大日志文件数：3 个
 
-  # 可选：备份调度器（如果需要容器化的定时备份）
+  # 自动备份调度器（每天凌晨2点自动备份）
   backup-scheduler:
     image: alpine:latest
     container_name: timelocker-backup-scheduler
@@ -171,15 +171,19 @@ services:
       - MAX_BACKUPS=${MAX_BACKUPS:-50}
       - BACKUP_PREFIX=${BACKUP_PREFIX:-timelocker_auto}
       - CONTAINER_NAME=timelocker-backend
+      - TZ=UTC
     command: >
       sh -c "
-        apk add --no-cache docker-cli bash &&
-        echo '0 2 * * * /scripts/auto-backup.sh' | crontab - &&
-        echo '0 3 * * 0 /scripts/auto-backup.sh --cleanup-only' | crontab - &&
+        apk add --no-cache docker-cli bash wget &&
+        chmod +x /scripts/*.sh &&
+        echo '0 2 * * * /scripts/auto-backup.sh >> /var/log/backup.log 2>&1' | crontab - &&
+        echo '0 3 * * 0 /scripts/auto-backup.sh --cleanup-only >> /var/log/backup.log 2>&1' | crontab - &&
+        echo 'Backup scheduler started. Daily backup at 2:00 AM UTC, weekly cleanup at 3:00 AM UTC on Sunday.' &&
         crond -f -l 2
       "
     depends_on:
-      - timelocker-backend
+      timelocker-backend:
+        condition: service_healthy
     networks:
       - timelocker-network
     logging:

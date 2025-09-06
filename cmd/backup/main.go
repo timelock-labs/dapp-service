@@ -176,6 +176,9 @@ func handleInfo(bm *database.BackupManager, backupPath string) {
 	fmt.Printf("Auth Nonces: %d\n", len(info.AuthNonces))
 	fmt.Printf("\n=== Safe Wallets ===\n")
 	fmt.Printf("Safe Wallets: %d\n", len(info.SafeWallets))
+	fmt.Printf("\n=== System Data ===\n")
+	fmt.Printf("Support Chains: %d\n", len(info.SupportChains))
+	fmt.Printf("Sponsors: %d\n", len(info.Sponsors))
 	fmt.Printf("\n=== ABIs ===\n")
 	fmt.Printf("User Custom ABIs: %d\n", len(info.ABIs))
 	fmt.Printf("\n=== Timelock Contracts ===\n")
@@ -185,15 +188,13 @@ func handleInfo(bm *database.BackupManager, backupPath string) {
 	fmt.Printf("Compound Timelock Transactions: %d\n", len(info.CompoundTimelockTransactions))
 	fmt.Printf("OpenZeppelin Timelock Transactions: %d\n", len(info.OpenzeppelinTimelockTransactions))
 	fmt.Printf("Timelock Transaction Flows: %d\n", len(info.TimelockTransactionFlows))
+	fmt.Printf("Block Scan Progress: %d\n", len(info.BlockScanProgress))
 	fmt.Printf("\n=== Notifications ===\n")
 	fmt.Printf("Email Send Logs: %d\n", len(info.EmailSendLogs))
 	fmt.Printf("Telegram Configs: %d\n", len(info.TelegramConfigs))
 	fmt.Printf("Lark Configs: %d\n", len(info.LarkConfigs))
 	fmt.Printf("Feishu Configs: %d\n", len(info.FeishuConfigs))
 	fmt.Printf("Notification Logs: %d\n", len(info.NotificationLogs))
-	fmt.Printf("Block Scan Progress: %d\n", len(info.BlockScanProgress))
-	fmt.Printf("\n=== System Data ===\n")
-	fmt.Printf("Sponsors: %d\n", len(info.Sponsors))
 }
 
 func handleReset(db *gorm.DB) {

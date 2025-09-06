@@ -36,6 +36,8 @@ type BackupData struct {
 	AuthNonces             []map[string]interface{} `json:"auth_nonces"`
 	// Safe钱包相关表
 	SafeWallets []map[string]interface{} `json:"safe_wallets"`
+	// 支持的区块链表
+	SupportChains []map[string]interface{} `json:"support_chains"`
 	// ABI相关表
 	ABIs []map[string]interface{} `json:"abis"`
 	// Timelock合约相关表
@@ -78,6 +80,11 @@ func (bm *BackupManager) CreateBackup(backupPath string) error {
 	// 备份用户数据
 	if err := bm.backupTable(ctx, "users", &backup.Users); err != nil {
 		return fmt.Errorf("failed to backup users: %w", err)
+	}
+
+	// 备份支持的区块链数据
+	if err := bm.backupTable(ctx, "support_chains", &backup.SupportChains); err != nil {
+		return fmt.Errorf("failed to backup support_chains: %w", err)
 	}
 
 	// 备份邮箱数据
@@ -196,6 +203,7 @@ func (bm *BackupManager) CreateBackup(backupPath string) error {
 		"path", backupPath,
 		"version", backup.Version,
 		"users", len(backup.Users),
+		"support_chains", len(backup.SupportChains),
 		"emails", len(backup.Emails),
 		"user_emails", len(backup.UserEmails),
 		"safe_wallets", len(backup.SafeWallets),
@@ -252,107 +260,107 @@ func (bm *BackupManager) RestoreBackup(backupPath string, options RestoreOptions
 			}
 		}
 
-		// === 用户相关表恢复 ===
-		// 恢复用户数据
+		// 按照init_tables.go中的表创建顺序恢复数据
+		// 这确保了外键依赖关系的正确性
+
+		// 1. 用户表（基础表，无外键依赖）
 		if err := bm.restoreTable(ctx, tx, "users", backup.Users, options.OnConflict); err != nil {
 			return fmt.Errorf("failed to restore users: %w", err)
 		}
 
-		// 恢复邮箱数据
-		if err := bm.restoreTable(ctx, tx, "emails", backup.Emails, options.OnConflict); err != nil {
-			return fmt.Errorf("failed to restore emails: %w", err)
+		// 2. 支持的区块链表（基础表，无外键依赖）
+		if err := bm.restoreTable(ctx, tx, "support_chains", backup.SupportChains, options.OnConflict); err != nil {
+			return fmt.Errorf("failed to restore support_chains: %w", err)
 		}
 
-		// 恢复用户邮箱关联数据
-		if err := bm.restoreTable(ctx, tx, "user_emails", backup.UserEmails, options.OnConflict); err != nil {
-			return fmt.Errorf("failed to restore user_emails: %w", err)
-		}
-
-		// 恢复邮箱验证码（可选）
-		if err := bm.restoreTable(ctx, tx, "email_verification_codes", backup.EmailVerificationCodes, options.OnConflict); err != nil {
-			return fmt.Errorf("failed to restore email_verification_codes: %w", err)
-		}
-
-		// 恢复认证nonce（可选）
-		if err := bm.restoreTable(ctx, tx, "auth_nonces", backup.AuthNonces, options.OnConflict); err != nil {
-			return fmt.Errorf("failed to restore auth_nonces: %w", err)
-		}
-
-		// === Safe钱包相关表恢复 ===
-		// 恢复Safe钱包数据
-		if err := bm.restoreTable(ctx, tx, "safe_wallets", backup.SafeWallets, options.OnConflict); err != nil {
-			return fmt.Errorf("failed to restore safe_wallets: %w", err)
-		}
-
-		// === ABI相关表恢复 ===
-		// 恢复用户自定义ABI
+		// 3. ABI库表（依赖用户表）
 		if err := bm.restoreTable(ctx, tx, "abis", backup.ABIs, options.OnConflict); err != nil {
 			return fmt.Errorf("failed to restore abis: %w", err)
 		}
 
-		// === Timelock合约相关表恢复 ===
-		// 恢复Compound timelock合约
+		// 4. Compound标准Timelock合约表（依赖用户表）
 		if err := bm.restoreTable(ctx, tx, "compound_timelocks", backup.CompoundTimelocks, options.OnConflict); err != nil {
 			return fmt.Errorf("failed to restore compound_timelocks: %w", err)
 		}
 
-		// 恢复OpenZeppelin timelock合约
+		// 5. OpenZeppelin标准Timelock合约表（依赖用户表）
 		if err := bm.restoreTable(ctx, tx, "openzeppelin_timelocks", backup.OpenzeppelinTimelocks, options.OnConflict); err != nil {
 			return fmt.Errorf("failed to restore openzeppelin_timelocks: %w", err)
 		}
 
-		// === 交易记录相关表恢复 ===
-		// 恢复Compound Timelock交易记录
-		if err := bm.restoreTable(ctx, tx, "compound_timelock_transactions", backup.CompoundTimelockTransactions, options.OnConflict); err != nil {
-			return fmt.Errorf("failed to restore compound_timelock_transactions: %w", err)
+		// 6. 赞助方和生态伙伴表（独立表）
+		if err := bm.restoreTable(ctx, tx, "sponsors", backup.Sponsors, options.OnConflict); err != nil {
+			return fmt.Errorf("failed to restore sponsors: %w", err)
 		}
 
-		// 恢复OpenZeppelin Timelock交易记录
-		if err := bm.restoreTable(ctx, tx, "openzeppelin_timelock_transactions", backup.OpenzeppelinTimelockTransactions, options.OnConflict); err != nil {
-			return fmt.Errorf("failed to restore openzeppelin_timelock_transactions: %w", err)
-		}
-
-		// 恢复Timelock交易流程记录
-		if err := bm.restoreTable(ctx, tx, "timelock_transaction_flows", backup.TimelockTransactionFlows, options.OnConflict); err != nil {
-			return fmt.Errorf("failed to restore timelock_transaction_flows: %w", err)
-		}
-
-		// === 邮件通知相关表恢复 ===
-		// 恢复邮件发送记录
-		if err := bm.restoreTable(ctx, tx, "email_send_logs", backup.EmailSendLogs, options.OnConflict); err != nil {
-			return fmt.Errorf("failed to restore email_send_logs: %w", err)
-		}
-
-		// === 其他通知渠道配置表恢复 ===
-		// 恢复Telegram配置
-		if err := bm.restoreTable(ctx, tx, "telegram_configs", backup.TelegramConfigs, options.OnConflict); err != nil {
-			return fmt.Errorf("failed to restore telegram_configs: %w", err)
-		}
-
-		// 恢复Lark配置
-		if err := bm.restoreTable(ctx, tx, "lark_configs", backup.LarkConfigs, options.OnConflict); err != nil {
-			return fmt.Errorf("failed to restore lark_configs: %w", err)
-		}
-
-		// 恢复Feishu配置
-		if err := bm.restoreTable(ctx, tx, "feishu_configs", backup.FeishuConfigs, options.OnConflict); err != nil {
-			return fmt.Errorf("failed to restore feishu_configs: %w", err)
-		}
-
-		// 恢复通知发送记录
-		if err := bm.restoreTable(ctx, tx, "notification_logs", backup.NotificationLogs, options.OnConflict); err != nil {
-			return fmt.Errorf("failed to restore notification_logs: %w", err)
-		}
-
-		// 恢复区块扫描进度
+		// 7. 区块扫描进度表（独立表）
 		if err := bm.restoreTable(ctx, tx, "block_scan_progress", backup.BlockScanProgress, options.OnConflict); err != nil {
 			return fmt.Errorf("failed to restore block_scan_progress: %w", err)
 		}
 
-		// === 系统表恢复（可选）===
-		// 恢复赞助方数据（系统表，可选择是否恢复）
-		if err := bm.restoreTable(ctx, tx, "sponsors", backup.Sponsors, options.OnConflict); err != nil {
-			return fmt.Errorf("failed to restore sponsors: %w", err)
+		// 8. Compound Timelock 交易记录表
+		if err := bm.restoreTable(ctx, tx, "compound_timelock_transactions", backup.CompoundTimelockTransactions, options.OnConflict); err != nil {
+			return fmt.Errorf("failed to restore compound_timelock_transactions: %w", err)
+		}
+
+		// 9. OpenZeppelin Timelock 交易记录表
+		if err := bm.restoreTable(ctx, tx, "openzeppelin_timelock_transactions", backup.OpenzeppelinTimelockTransactions, options.OnConflict); err != nil {
+			return fmt.Errorf("failed to restore openzeppelin_timelock_transactions: %w", err)
+		}
+
+		// 10. Timelock 交易流程关联表
+		if err := bm.restoreTable(ctx, tx, "timelock_transaction_flows", backup.TimelockTransactionFlows, options.OnConflict); err != nil {
+			return fmt.Errorf("failed to restore timelock_transaction_flows: %w", err)
+		}
+
+		// 11. emails 表
+		if err := bm.restoreTable(ctx, tx, "emails", backup.Emails, options.OnConflict); err != nil {
+			return fmt.Errorf("failed to restore emails: %w", err)
+		}
+
+		// 12. user_emails 表（依赖用户表和邮箱表）
+		if err := bm.restoreTable(ctx, tx, "user_emails", backup.UserEmails, options.OnConflict); err != nil {
+			return fmt.Errorf("failed to restore user_emails: %w", err)
+		}
+
+		// 13. email_verification_codes 表（依赖user_emails表）
+		if err := bm.restoreTable(ctx, tx, "email_verification_codes", backup.EmailVerificationCodes, options.OnConflict); err != nil {
+			return fmt.Errorf("failed to restore email_verification_codes: %w", err)
+		}
+
+		// 14. email_send_logs 表（依赖邮箱表）
+		if err := bm.restoreTable(ctx, tx, "email_send_logs", backup.EmailSendLogs, options.OnConflict); err != nil {
+			return fmt.Errorf("failed to restore email_send_logs: %w", err)
+		}
+
+		// 15. safe_wallets 表（独立表）
+		if err := bm.restoreTable(ctx, tx, "safe_wallets", backup.SafeWallets, options.OnConflict); err != nil {
+			return fmt.Errorf("failed to restore safe_wallets: %w", err)
+		}
+
+		// 16. auth_nonces 表（独立表）
+		if err := bm.restoreTable(ctx, tx, "auth_nonces", backup.AuthNonces, options.OnConflict); err != nil {
+			return fmt.Errorf("failed to restore auth_nonces: %w", err)
+		}
+
+		// 17. telegram_configs 表
+		if err := bm.restoreTable(ctx, tx, "telegram_configs", backup.TelegramConfigs, options.OnConflict); err != nil {
+			return fmt.Errorf("failed to restore telegram_configs: %w", err)
+		}
+
+		// 18. lark_configs 表
+		if err := bm.restoreTable(ctx, tx, "lark_configs", backup.LarkConfigs, options.OnConflict); err != nil {
+			return fmt.Errorf("failed to restore lark_configs: %w", err)
+		}
+
+		// 19. feishu_configs 表
+		if err := bm.restoreTable(ctx, tx, "feishu_configs", backup.FeishuConfigs, options.OnConflict); err != nil {
+			return fmt.Errorf("failed to restore feishu_configs: %w", err)
+		}
+
+		// 20. notification_logs 表（最后恢复，依赖其他表）
+		if err := bm.restoreTable(ctx, tx, "notification_logs", backup.NotificationLogs, options.OnConflict); err != nil {
+			return fmt.Errorf("failed to restore notification_logs: %w", err)
 		}
 
 		return nil
@@ -538,36 +546,72 @@ func (bm *BackupManager) getPrimaryKeyColumn(tableName string) string {
 func (bm *BackupManager) clearUserData(ctx context.Context, tx *gorm.DB) error {
 	logger.Warn("Clearing existing user data")
 
-	// 按依赖关系顺序删除（从子表到父表）
+	// 按依赖关系顺序删除（从子表到父表），与init_tables.go中删除顺序一致
 	tables := []string{
+		// 通知相关表（最后创建的，最先删除）
 		"notification_logs",
 		"feishu_configs",
 		"lark_configs",
 		"telegram_configs",
-		"auth_nonces",
-		"safe_wallets",
 		"email_send_logs",
 		"email_verification_codes",
 		"user_emails",
 		"emails",
+
+		// Safe钱包表
+		"safe_wallets",
+
+		// 认证相关表
+		"auth_nonces",
+
+		// 交易流程表
 		"timelock_transaction_flows",
+
+		// 交易记录表
 		"openzeppelin_timelock_transactions",
 		"compound_timelock_transactions",
+
+		// 扫描进度表
 		"block_scan_progress",
-		"sponsors",
+
+		// Timelock合约表
 		"openzeppelin_timelocks",
 		"compound_timelocks",
+
+		// 赞助方表
+		"sponsors",
+
+		// ABI表
 		"abis",
+
+		// 支持链表
 		"support_chains",
+
+		// 用户表（最先创建的，最后删除）
 		"users",
 	}
 
 	for _, table := range tables {
-		if err := tx.WithContext(ctx).Exec(fmt.Sprintf("DELETE FROM %s", table)).Error; err != nil {
-			logger.Error("Failed to clear table", err, "table", table)
-			return fmt.Errorf("failed to clear table %s: %w", table, err)
+		// 禁用外键约束检查
+		if err := tx.WithContext(ctx).Exec("SET session_replication_role = replica").Error; err != nil {
+			logger.Warn("Failed to disable foreign key constraints", "error", err)
+		}
+
+		if err := tx.WithContext(ctx).Exec(fmt.Sprintf("TRUNCATE TABLE %s RESTART IDENTITY CASCADE", table)).Error; err != nil {
+			// 如果TRUNCATE失败，尝试DELETE
+			if err := tx.WithContext(ctx).Exec(fmt.Sprintf("DELETE FROM %s", table)).Error; err != nil {
+				logger.Error("Failed to clear table", err, "table", table)
+				// 恢复外键约束检查
+				tx.WithContext(ctx).Exec("SET session_replication_role = DEFAULT")
+				return fmt.Errorf("failed to clear table %s: %w", table, err)
+			}
 		}
 		logger.Info("Cleared table", "table", table)
+	}
+
+	// 恢复外键约束检查
+	if err := tx.WithContext(ctx).Exec("SET session_replication_role = DEFAULT").Error; err != nil {
+		logger.Warn("Failed to re-enable foreign key constraints", "error", err)
 	}
 
 	logger.Info("User data cleared successfully")
@@ -642,6 +686,7 @@ func (bm *BackupManager) GetBackupInfo(backupPath string) (*BackupData, error) {
 
 	// 清空实际数据，只返回元信息
 	backup.Users = nil
+	backup.SupportChains = nil
 	backup.Emails = nil
 	backup.UserEmails = nil
 	backup.EmailVerificationCodes = nil

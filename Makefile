@@ -52,7 +52,9 @@ help:
 	@echo "  make backup-manual    - 手动备份(带时间戳)"
 	@echo "  make backup-list      - 列出所有备份"
 	@echo "  make backup-cleanup   - 清理旧备份"
-	@echo "  make restore FILE=    - 从备份恢复"
+	@echo "  make backup-status    - 检查备份系统状态"
+	@echo "  make restore FILE=    - 从备份完全恢复(删除现有数据)"
+	@echo "  make restore-safe FILE= - 安全恢复(跳过冲突)"
 	@echo "  make validate FILE=   - 验证备份文件"
 	@echo "  make info FILE=       - 显示备份信息"
 	@echo ""
@@ -80,7 +82,8 @@ help:
 	@echo "$(YELLOW)📖 使用示例:$(NC)"
 	@echo "  make dev-setup                    # 开发环境一键部署"
 	@echo "  make backup                       # 创建备份"
-	@echo "  make restore FILE=backup.json     # 恢复数据"
+	@echo "  make restore FILE=backup.json     # 完全恢复数据(删除现有数据)"
+	@echo "  make restore-safe FILE=backup.json # 安全恢复(跳过冲突)"
 	@echo "  make monitor                      # 查看系统状态"
 	@echo ""
 
@@ -233,7 +236,16 @@ restore:
 		echo "$(RED)❌ 请指定备份文件: make restore FILE=backup.json$(NC)"; \
 		exit 1; \
 	fi
-	@echo "$(BLUE)🔄 从备份恢复: $(FILE)$(NC)"
+	@echo "$(BLUE)🔄 从备份完全恢复(删除现有数据): $(FILE)$(NC)"
+	@echo "$(RED)⚠️  警告: 这将删除所有现有数据并从备份恢复$(NC)"
+	@./scripts/backup.sh --action restore --file $(FILE)
+
+restore-safe:
+	@if [ -z "$(FILE)" ]; then \
+		echo "$(RED)❌ 请指定备份文件: make restore-safe FILE=backup.json$(NC)"; \
+		exit 1; \
+	fi
+	@echo "$(BLUE)🔄 安全恢复(跳过冲突): $(FILE)$(NC)"
 	@./scripts/backup.sh --action restore --file $(FILE) --conflict skip
 
 validate:
@@ -361,13 +373,31 @@ docs:
 
 prod-backup:
 	@echo "$(BLUE)🏭 生产环境备份...$(NC)"
-	@./scripts/backup.sh --action backup --file "prod_backup_$$(date +%Y%m%d_%H%M%S).json"
+	@./scripts/backup.sh --action backup --file "prod_backup_$$(date +%Y%m%d_%H%M%S).json" --auto
 	@echo "$(GREEN)✅ 生产备份完成$(NC)"
 
 emergency-backup:
 	@echo "$(RED)🚨 紧急备份...$(NC)"
-	@./scripts/backup.sh --action backup --file "emergency_backup_$$(date +%Y%m%d_%H%M%S).json"
+	@./scripts/backup.sh --action backup --file "emergency_backup_$$(date +%Y%m%d_%H%M%S).json" --auto
 	@echo "$(GREEN)✅ 紧急备份完成$(NC)"
+
+# 备份状态检查
+backup-status:
+	@echo "$(BLUE)📊 备份系统状态$(NC)"
+	@echo "$(YELLOW)═══════════════════════════════════════$(NC)"
+	@if docker ps | grep -q "timelocker-backup-scheduler"; then \
+		echo "$(GREEN)✅ 自动备份调度器: 运行中$(NC)"; \
+	else \
+		echo "$(RED)❌ 自动备份调度器: 未运行$(NC)"; \
+	fi
+	@if [ -d "backups" ]; then \
+		echo "$(GREEN)✅ 备份目录: 存在$(NC)"; \
+		echo "备份文件数量: $$(ls -1 backups/*.json 2>/dev/null | wc -l || echo 0)"; \
+		echo "最新备份: $$(ls -t backups/*.json 2>/dev/null | head -1 | xargs basename 2>/dev/null || echo '无')"; \
+		echo "目录大小: $$(du -sh backups/ 2>/dev/null | cut -f1 || echo '0B')"; \
+	else \
+		echo "$(RED)❌ 备份目录: 不存在$(NC)"; \
+	fi
 
 # ================================
 # 快速操作别名

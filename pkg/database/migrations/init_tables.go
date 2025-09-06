@@ -1207,10 +1207,16 @@ func ResetDangerous(db *gorm.DB) error {
 
 	// 删除所有表（逆序删除以避免外键约束问题）
 	tables := []string{
+		"notification_logs",
+		"feishu_configs",
+		"lark_configs",
+		"telegram_configs",
 		"email_send_logs",
 		"email_verification_codes",
 		"user_emails",
 		"emails",
+		"safe_wallets",
+		"auth_nonces",
 		"timelock_transaction_flows",
 		"openzeppelin_timelock_transactions",
 		"compound_timelock_transactions",

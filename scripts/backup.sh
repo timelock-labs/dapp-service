@@ -192,10 +192,14 @@ main() {
     
     # 处理文件路径
     if [ -n "$file" ]; then
-        # 如果是相对路径，转换为容器内的绝对路径
-        if [[ "$file" != /* ]]; then
-            file="/app/backups/$(basename "$file")"
+        # 确保文件名格式正确
+        local filename=$(basename "$file")
+        # 如果没有扩展名，添加.json
+        if [[ "$filename" != *.json ]]; then
+            filename="${filename}.json"
         fi
+        # 容器内的备份文件路径
+        file="/app/backups/$filename"
         backup_cmd="$backup_cmd -file=$file"
         log "backup file: $file"
     fi
@@ -256,8 +260,9 @@ main() {
             fi
             
             log "start restoring data..."
+            log_warning "this operation will DELETE ALL existing data and restore from backup"
             if [ "$auto_mode" = false ]; then
-                log_warning "this operation will modify the database data"
+                log_warning "this operation will completely replace all database data"
                 read -p "confirm to continue? (y/N): " -n 1 -r
                 echo
                 if [[ ! $REPLY =~ ^[Yy]$ ]]; then
@@ -265,6 +270,9 @@ main() {
                     exit 0
                 fi
             fi
+            
+            # 恢复时总是清空现有数据并替换
+            backup_cmd="$backup_cmd -clear -conflict=replace"
             
             if execute_backup_command "$backup_cmd"; then
                 log_success "data restored successfully"
