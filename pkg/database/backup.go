@@ -2,6 +2,8 @@ package database
 
 import (
 	"context"
+	"encoding/base64"
+	"encoding/hex"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -474,6 +476,11 @@ func (bm *BackupManager) insertRecord(ctx context.Context, tx *gorm.DB, tableNam
 	var placeholders []string
 
 	for col, val := range record {
+		// 处理BYTEA字段的二进制数据
+		if bm.isByteaField(tableName, col) {
+			val = bm.processByteaField(val)
+		}
+
 		columns = append(columns, col)
 		values = append(values, val)
 		placeholders = append(placeholders, "?")
@@ -591,6 +598,82 @@ func (bm *BackupManager) getPrimaryKeyColumns(tableName string) []string {
 	// 返回主键列，用于在UPDATE时排除
 	// 注意：所有表都使用id作为主键，没有复合主键表
 	return []string{"id"}
+}
+
+// isByteaField 判断字段是否为BYTEA类型
+func (bm *BackupManager) isByteaField(tableName, columnName string) bool {
+	// 定义包含BYTEA字段的表和字段映射
+	byteaFields := map[string][]string{
+		"compound_timelock_transactions":     {"event_call_data"},
+		"openzeppelin_timelock_transactions": {"event_call_data"},
+		"timelock_transaction_flows":         {"call_data"},
+	}
+
+	if fields, exists := byteaFields[tableName]; exists {
+		for _, field := range fields {
+			if field == columnName {
+				return true
+			}
+		}
+	}
+	return false
+}
+
+// processByteaField 处理BYTEA字段的数据
+func (bm *BackupManager) processByteaField(val interface{}) interface{} {
+	if val == nil {
+		return nil
+	}
+
+	// 如果已经是字节数组，直接返回
+	if bytes, ok := val.([]byte); ok {
+		return bytes
+	}
+
+	// 如果是字符串，尝试解码
+	if strVal, ok := val.(string); ok {
+		if strVal == "" {
+			return nil
+		}
+
+		// 检查是否包含无效的UTF-8字节（如0x00）
+		if strings.Contains(strVal, "\x00") {
+			// 如果包含空字节，说明这是被错误处理的二进制数据
+			// 尝试清理或转换为十六进制
+			cleaned := strings.ReplaceAll(strVal, "\x00", "")
+			if cleaned == "" {
+				return nil
+			}
+			// 将清理后的字符串作为十六进制处理
+			if decoded, err := hex.DecodeString(cleaned); err == nil {
+				return decoded
+			}
+			// 如果无法解码，返回原始字节
+			return []byte(cleaned)
+		}
+
+		// 尝试从base64解码
+		if decoded, err := base64.StdEncoding.DecodeString(strVal); err == nil {
+			return decoded
+		}
+
+		// 尝试从十六进制解码
+		if strings.HasPrefix(strVal, "0x") {
+			if decoded, err := hex.DecodeString(strVal[2:]); err == nil {
+				return decoded
+			}
+		} else {
+			if decoded, err := hex.DecodeString(strVal); err == nil {
+				return decoded
+			}
+		}
+
+		// 如果都无法解码，将字符串转为字节数组
+		return []byte(strVal)
+	}
+
+	// 其他类型保持不变
+	return val
 }
 
 // clearUserData 清空用户相关数据（保留系统数据）
