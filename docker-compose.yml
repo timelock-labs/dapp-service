@@ -152,9 +152,9 @@ services:
         apk add --no-cache docker-cli bash wget &&
         cp /scripts/*.sh /tmp/ &&
         chmod +x /tmp/*.sh &&
-        echo '0 2 * * * /tmp/auto-backup.sh >> /var/log/backup.log 2>&1' | crontab - &&
-        echo '0 3 * * 0 /tmp/auto-backup.sh --cleanup-only >> /var/log/backup.log 2>&1' | crontab - &&
+        (echo '0 2 * * * /tmp/auto-backup.sh >> /var/log/backup.log 2>&1'; echo '0 3 * * 0 /tmp/auto-backup.sh --cleanup-only >> /var/log/backup.log 2>&1') | crontab - &&
         echo 'Backup scheduler started. Daily backup at 2:00 AM UTC, weekly cleanup at 3:00 AM UTC on Sunday.' &&
+        crontab -l &&
         crond -f -l 2
       "
     depends_on:

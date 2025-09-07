@@ -89,10 +89,15 @@ check_docker_environment() {
         exit 1
     fi
     
-    # 检查docker-compose是否安装
-    if ! command -v docker-compose &> /dev/null; then
-        log_error "docker-compose is not installed or not in PATH"
-        exit 1
+    # 在容器环境中跳过docker-compose检查
+    if [[ -f "/.dockerenv" ]] || [[ "$HOSTNAME" == *"backup-scheduler"* ]]; then
+        log "running in container environment, skipping docker-compose check"
+    else
+        # 检查docker-compose是否安装
+        if ! command -v docker-compose &> /dev/null; then
+            log_error "docker-compose is not installed or not in PATH"
+            exit 1
+        fi
     fi
     
     log_success "Docker environment check passed"
