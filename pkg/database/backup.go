@@ -478,21 +478,35 @@ func (bm *BackupManager) insertRecord(ctx context.Context, tx *gorm.DB, tableNam
 	case ConflictSkip:
 		sql += " ON CONFLICT DO NOTHING"
 	case ConflictReplace:
-		sql += fmt.Sprintf(" ON CONFLICT (%s) DO UPDATE SET ", bm.getPrimaryKeyColumn(tableName))
+		primaryKey := bm.getPrimaryKeyColumn(tableName)
+		sql += fmt.Sprintf(" ON CONFLICT (%s) DO UPDATE SET ", primaryKey)
 		var updates []string
+		primaryKeyCols := strings.Split(strings.ReplaceAll(primaryKey, " ", ""), ",")
+		primaryKeyMap := make(map[string]bool)
+		for _, pk := range primaryKeyCols {
+			primaryKeyMap[pk] = true
+		}
+
 		for _, col := range columns {
-			if col != "id" { // 通常不更新主键
+			if !primaryKeyMap[col] { // 不更新主键列
 				updates = append(updates, fmt.Sprintf("%s = EXCLUDED.%s", col, col))
 			}
 		}
 		if len(updates) > 0 {
 			sql += strings.Join(updates, ", ")
+		} else {
+			// 如果没有可更新的列，改用DO NOTHING
+			sql = strings.Replace(sql, " DO UPDATE SET ", " DO NOTHING", 1)
 		}
 	case ConflictError:
 		// 默认行为，遇到冲突会报错
 	}
 
-	return tx.WithContext(ctx).Exec(sql, values...).Error
+	err := tx.WithContext(ctx).Exec(sql, values...).Error
+	if err != nil {
+		logger.Error("Failed to execute SQL", err, "table", tableName, "sql", sql, "values", values)
+	}
+	return err
 }
 
 // getPrimaryKeyColumn 获取表的主键列名（简化实现）
