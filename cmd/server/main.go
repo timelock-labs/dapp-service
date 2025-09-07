@@ -197,7 +197,7 @@ func main() {
 
 	// 13. 初始化需要RPC管理器的服务和处理器
 	authSvc := authService.NewService(userRepository, safeRepository, rpcManager, jwtManager)
-	timelockSvc := timelockService.NewService(timelockRepository, chainRepository, rpcManager, cfg)
+	timelockSvc := timelockService.NewService(timelockRepository, chainRepository, flowRepository, rpcManager, cfg)
 
 	// 14. 初始化处理器并注册路由
 	authHandler := authHandler.NewHandler(authSvc)

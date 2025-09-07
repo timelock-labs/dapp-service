@@ -2,6 +2,7 @@ package scanner
 
 import (
 	"context"
+	"fmt"
 	"strings"
 	"time"
 	"timelocker-backend/internal/types"
@@ -27,6 +28,9 @@ type FlowRepository interface {
 	GetUserRelatedCompoundFlowsCount(ctx context.Context, userAddress string, standard *string) (*types.FlowStatusCount, error)
 	GetCompoundTransactionDetail(ctx context.Context, standard string, txHash string) (*types.CompoundTimelockTransactionDetail, error)
 	GetCompoundQueueTransactionFunctionSignature(ctx context.Context, queueTxHash string, contractAddress string) (*string, error)
+
+	// GRACE_PERIOD相关方法
+	RefreshCompoundFlowsExpiredAt(ctx context.Context, chainID int, contractAddress string, gracePeriodSeconds int64) (int64, error)
 }
 
 type flowRepository struct {
@@ -399,4 +403,29 @@ func (r *flowRepository) GetCompoundQueueTransactionFunctionSignature(ctx contex
 	}
 
 	return tx.EventFunctionSignature, nil
+}
+
+// RefreshCompoundFlowsExpiredAt 刷新指定Compound合约的所有flows的expired_at字段
+func (r *flowRepository) RefreshCompoundFlowsExpiredAt(ctx context.Context, chainID int, contractAddress string, gracePeriodSeconds int64) (int64, error) {
+	normalizedContractAddress := strings.ToLower(contractAddress)
+
+	// 更新所有该合约的compound flows，重新计算expired_at = eta + grace_period
+	// 使用字符串格式化来构建INTERVAL表达式，避免参数化查询问题
+	intervalExpr := fmt.Sprintf("eta + INTERVAL '%d seconds'", gracePeriodSeconds)
+	result := r.db.WithContext(ctx).
+		Model(&types.TimelockTransactionFlow{}).
+		Where("timelock_standard = ? AND chain_id = ? AND LOWER(contract_address) = ? AND eta IS NOT NULL",
+			"compound", chainID, normalizedContractAddress).
+		Update("expired_at", gorm.Expr(intervalExpr))
+
+	if result.Error != nil {
+		logger.Error("RefreshCompoundFlowsExpiredAt Error", result.Error,
+			"chain_id", chainID, "contract_address", contractAddress, "grace_period", gracePeriodSeconds)
+		return 0, result.Error
+	}
+
+	logger.Info("RefreshCompoundFlowsExpiredAt completed",
+		"updated", result.RowsAffected, "chain_id", chainID, "contract_address", contractAddress, "grace_period", gracePeriodSeconds)
+
+	return result.RowsAffected, nil
 }
