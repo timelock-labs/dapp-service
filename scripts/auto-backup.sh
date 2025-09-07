@@ -9,9 +9,16 @@ set -e
 
 # 配置变量
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-PROJECT_ROOT="$(cd "$SCRIPT_DIR/.." && pwd)"
-BACKUP_DIR="${PROJECT_ROOT}/backups"
-BACKUP_SCRIPT="${SCRIPT_DIR}/backup.sh"
+# 在容器中，脚本被复制到/tmp，需要找到原始的项目根目录
+if [[ "$SCRIPT_DIR" == "/tmp" ]]; then
+    PROJECT_ROOT="/scripts/.."
+    BACKUP_DIR="/backups"
+    BACKUP_SCRIPT="/tmp/backup.sh"
+else
+    PROJECT_ROOT="$(cd "$SCRIPT_DIR/.." && pwd)"
+    BACKUP_DIR="${PROJECT_ROOT}/backups"
+    BACKUP_SCRIPT="${SCRIPT_DIR}/backup.sh"
+fi
 
 # 备份配置
 BACKUP_RETENTION_DAYS=${BACKUP_RETENTION_DAYS:-30}  # 保留备份的天数
