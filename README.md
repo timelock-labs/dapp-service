@@ -1,4 +1,4 @@
-# TimeLocker Backend V1
+# TimeLocker Backend
 
 The **TimeLocker Backend Service** provides API support for a decentralized timelock management platform.  
 
